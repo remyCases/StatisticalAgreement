@@ -1,9 +1,12 @@
 import numpy as np
 import pandas as pd
 from typing import TypeVar
+from scipy.stats import norm, ncx2
 from .classutils import TransformFunc, ConfidentLimit, TransformEstimator
 
 ALPHA = 0.05
+CP_DELTA = 0.5
+CP_ALLOWANCE = 0.9
 WITHIN_SAMPLE_DEVIATION = 0.15
 
 def cp_tdi_approximation(rbs: float, cp_allowance: float) -> bool:
@@ -63,6 +66,40 @@ class Agreement:
         self.res.loc["ccc", "variance"] = var_ccc_hat
         self.res.loc["ccc", "limit"] = ccc_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
         self.res.loc["ccc", "allowance"] = 1 - WITHIN_SAMPLE_DEVIATION**2
+
+        return self
+    
+    def CP_TDI_approximation(self) -> SAgreement:
+
+        D = self._X - self._Y
+        s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(self._X, self._Y, bias=True).flatten()
+        s_sq_hat_d = self._n / (self._n - 3) * (s_sq_hat_biased_x + s_sq_hat_biased_y - 2 * s_hat_biased_xy)
+        mu_d = np.mean(D)
+
+        eps_hat = np.sum((D)**2) / (self._n - 1)
+        var_esp_hat = 2 / (self._n - 2) * ( 1 - mu_d**4 / eps_hat**4)
+        esp_range = TransformEstimator(eps_hat, var_esp_hat, TransformFunc.Log)
+        self.res.loc["msd", "estimator"] = eps_hat
+        self.res.loc["msd", "variance"] = var_esp_hat
+        self.res.loc["msd", "limit"] = esp_range.ci(ALPHA, ConfidentLimit.Upper, self._n)
+
+        rbs_hat = mu_d**2 / s_sq_hat_d
+        self.res.loc["rbs", "estimator"] = rbs_hat
+        self.res.loc["rbs", "allowance"] = cp_tdi_approximation(rbs_hat, CP_ALLOWANCE)
+
+        delta_plus = (CP_DELTA + mu_d) / np.sqrt(s_sq_hat_d)
+        n_delta_plus = norm.pdf(-delta_plus)
+        delta_minus = (CP_DELTA - mu_d) / np.sqrt(s_sq_hat_d)
+        n_delta_minus = norm.pdf(delta_minus)
+
+        cp_hat = ncx2.cdf(CP_DELTA, df=1, nc=rbs_hat)
+        var_cp_hat = 1/2 * ((delta_plus * n_delta_plus + delta_minus * n_delta_minus)**2 + 
+                            (n_delta_plus - n_delta_minus)**2) / ((self._n-3)*(1-cp_hat)**2*cp_hat**2)
+        cp_range = TransformEstimator(cp_hat, var_cp_hat, TransformFunc.Logit)
+        self.res.loc["cp", "estimator"] = cp_hat
+        self.res.loc["cp", "variance"] = var_cp_hat
+        self.res.loc["cp", "limit"] = cp_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
+        self.res.loc["cp", "allowance"] = CP_ALLOWANCE
 
         return self
     
