@@ -1,2 +1,5 @@
-from .classutils import TransformFunc, ConfidentLimit, TransformEstimator
-from .agreement import cp_tdi_approximation, Agreement
+# Copyright (C) 2023 Rémy Cases
+# See LICENSE file for extended copyright information.
+# This file is part of adventOfCode project from https://github.com/remyCases/StatiscalAgreement.
+
+from .agreement import Agreement
