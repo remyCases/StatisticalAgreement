@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from typing import TypeVar
 from scipy.stats import norm, ncx2
-from .classutils import TransformFunc, ConfidentLimit, TransformEstimator
+from .classutils import TransformFunc, ConfidentLimit, TransformEstimator, Estimator
 
 ALPHA = 0.05
 CP_DELTA = 0.5
@@ -41,8 +41,6 @@ class Agreement:
         self._delta_criterion = delta_criterion_for_cp
         self._pi_criterion = pi_criterion_for_tdi
         self._n = len(x)
-        self.res = pd.DataFrame(columns=["estimator", "variance", "limit", "criterion", "allowance"], 
-                                index=["msd", "accuracy", "precision", "ccc", "cp", "tdi", "rbs"])
 
     def ccc_approximation(self) -> SAgreement:
         mu_d = np.mean(self._x) - np.mean(self._y)
@@ -59,25 +57,33 @@ class Agreement:
                     (1+rho_hat**2)*(acc_hat*nu_sq_hat-1)) / ((self._n-2)*(1-acc_hat)**2)
         
         acc_range = TransformEstimator(acc_hat, var_acc_hat, TransformFunc.Logit)
-        self.res.loc["accuracy", "estimator"] = acc_hat
-        self.res.loc["accuracy", "variance"] = var_acc_hat
-        self.res.loc["accuracy", "limit"] = acc_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
+        self._acc = Estimator(
+            name="acc",
+            estimator=acc_hat,
+            variance=var_acc_hat,
+            limit=acc_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
+        )
 
         var_rho_hat = (1 - rho_hat**2/2)/(self._n-3)
         rho_range = TransformEstimator(rho_hat, var_rho_hat, TransformFunc.Z)
-        self.res.loc["precision", "estimator"] = rho_hat
-        self.res.loc["precision", "variance"] = var_rho_hat
-        self.res.loc["precision", "limit"] = rho_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
+        self._rho = Estimator(
+            name="rho",
+            estimator=rho_hat,
+            variance=var_rho_hat,
+            limit=rho_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
+        )
 
         ccc_hat = acc_hat * rho_hat
         var_ccc_hat = 1 / (self._n - 2) * ( (1-rho_hat**2)*ccc_hat**2/((1-ccc_hat**2)*rho_hat**2)
                                            + 2*ccc_hat**3*(1-ccc_hat)*nu_sq_hat / (rho_hat*(1-ccc_hat**2)**2)
                                            - ccc_hat**4 * nu_sq_hat**2 / (2*rho_hat**2*(1-ccc_hat**2)**2))
         ccc_range = TransformEstimator(ccc_hat, var_ccc_hat, TransformFunc.Z)
-        self.res.loc["ccc", "estimator"] = ccc_hat
-        self.res.loc["ccc", "variance"] = var_ccc_hat
-        self.res.loc["ccc", "limit"] = ccc_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
-        self.res.loc["ccc", "allowance"] = 1 - WITHIN_SAMPLE_DEVIATION**2
+        self._ccc = Estimator(
+            name="ccc",
+            estimator=ccc_hat,
+            variance=var_ccc_hat,
+            limit=ccc_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
+        )
 
         return self
     
@@ -91,13 +97,20 @@ class Agreement:
         eps_sq_hat = np.sum(D**2) / (self._n - 1)
         var_esp_hat = 2 / (self._n - 2) * ( 1 - mu_d**4 / eps_sq_hat**2)
         esp_range = TransformEstimator(eps_sq_hat, var_esp_hat, TransformFunc.Log)
-        self.res.loc["msd", "estimator"] = eps_sq_hat
-        self.res.loc["msd", "variance"] = var_esp_hat
-        self.res.loc["msd", "limit"] = esp_range.ci(ALPHA, ConfidentLimit.Upper, self._n)
+        self._msd = Estimator(
+            name="msd",
+            estimator=eps_sq_hat,
+            variance=var_esp_hat,
+            limit=esp_range.ci(ALPHA, ConfidentLimit.Upper, self._n)
+        )
 
         rbs_hat = mu_d**2 / s_sq_hat_d
-        self.res.loc["rbs", "estimator"] = rbs_hat
-        self.res.loc["rbs", "allowance"] = cp_tdi_approximation(rbs_hat, CP_ALLOWANCE)
+        self._rbs = Estimator(
+            name="rbs",
+            estimator=rbs_hat,
+            variance=np.nan,
+            limit=np.nan
+        )
 
         delta_plus = (self._delta_criterion + mu_d) / np.sqrt(s_sq_hat_d)
         n_delta_plus = norm.pdf(-delta_plus)
@@ -108,20 +121,55 @@ class Agreement:
         var_cp_hat = 1/2 * ((delta_plus * n_delta_plus + delta_minus * n_delta_minus)**2 + 
                             (n_delta_plus - n_delta_minus)**2) / ((self._n-3)*(1-cp_hat)**2*cp_hat**2)
         cp_range = TransformEstimator(cp_hat, var_cp_hat, TransformFunc.Logit)
-        self.res.loc["cp", "estimator"] = cp_hat
-        self.res.loc["cp", "variance"] = var_cp_hat
-        self.res.loc["cp", "limit"] = cp_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
-        self.res.loc["cp", "criterion"] = self._delta_criterion
-        self.res.loc["cp", "allowance"] = CP_ALLOWANCE
+        self._cp = Estimator(
+            name="cp",
+            estimator=cp_hat,
+            variance=var_cp_hat,
+            limit=cp_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
+        )
 
         coeff_tdi = norm.ppf(1 - (1 - self._pi_criterion) / 2)
         tdi_hat = coeff_tdi * np.sqrt(eps_sq_hat)
-
-        self.res.loc["tdi", "estimator"] = tdi_hat
-        self.res.loc["tdi", "criterion"] = self._pi_criterion
-        self.res.loc["tdi", "allowance"] = TDI_ALLOWANCE
+        self._tdi = Estimator(
+            name="tdi",
+            estimator=tdi_hat,
+            variance=np.nan,
+            limit=np.nan
+        )
 
         return self
     
     def show(self) -> None:
+        self.res = pd.DataFrame(columns=["estimator", "variance", "limit", "criterion", "allowance"], 
+                                index=["msd", "accuracy", "precision", "ccc", "cp", "tdi", "rbs"])
+        
+        self.res.loc["accuracy", "estimator"] = self._acc.estimator
+        self.res.loc["accuracy", "variance"] = self._acc.variance
+        self.res.loc["accuracy", "limit"] = self._acc.limit
+                
+        self.res.loc["precision", "estimator"] = self._rho.estimator
+        self.res.loc["precision", "variance"] = self._rho.variance
+        self.res.loc["precision", "limit"] = self._rho.limit
+
+        self.res.loc["ccc", "estimator"] = self._ccc.estimator
+        self.res.loc["ccc", "variance"] = self._ccc.variance
+        self.res.loc["ccc", "limit"] = self._ccc.limit
+        self.res.loc["ccc", "allowance"] = 1 - WITHIN_SAMPLE_DEVIATION**2
+
+        self.res.loc["msd", "estimator"] = self._msd.estimator
+        self.res.loc["msd", "variance"] = self._msd.variance
+        self.res.loc["msd", "limit"] = self._msd.limit
+
+        self.res.loc["rbs", "estimator"] = self._rbs.estimator
+        self.res.loc["rbs", "allowance"] = cp_tdi_approximation(self._rbs.estimator, CP_ALLOWANCE)
+
+        self.res.loc["cp", "estimator"] = self._cp.estimator
+        self.res.loc["cp", "variance"] = self._cp.variance
+        self.res.loc["cp", "limit"] = self._cp.limit
+        self.res.loc["cp", "criterion"] = self._delta_criterion
+        self.res.loc["cp", "allowance"] = CP_ALLOWANCE
+
+        self.res.loc["tdi", "estimator"] = self._tdi.estimator
+        self.res.loc["tdi", "criterion"] = self._pi_criterion
+        self.res.loc["tdi", "allowance"] = TDI_ALLOWANCE
         print(self.res)

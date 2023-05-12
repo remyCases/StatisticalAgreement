@@ -5,6 +5,7 @@
 from enum import Enum
 import numpy as np
 from scipy.stats import norm, t
+from dataclasses import dataclass
 
 class TransformFunc(Enum):
     Id = 0
@@ -58,3 +59,10 @@ class TransformEstimator:
             transformed_limit = self._t.apply(self._esp) - coeff * np.sqrt(self._var)
 
         return self._t.apply_inv(transformed_limit)
+
+@dataclass
+class Estimator:
+    name: str
+    estimator: float
+    variance: float
+    limit: float
