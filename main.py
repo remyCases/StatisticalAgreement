@@ -14,10 +14,9 @@ if __name__ == "__main__":
                        delta_criterion_for_cp=5, 
                        pi_criterion_for_tdi=0.9)
     
-    agr.ccc_approximation().cp_tdi_approximation().show()
-    print(agr._msd)
+    agr.ccc_approximation().cp_tdi_approximation().ccc_ustat()
     print(agr._ccc)
-    print(agr._cp)
+    print(agr._ccc_ustat)
 
     plt.hist(X-Y)
     plt.show()

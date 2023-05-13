@@ -43,6 +43,8 @@ class Agreement:
         self._n = len(x)
 
     def ccc_approximation(self) -> SAgreement:
+        # Lin LI. A concordance correlation coefficient to evaluate reproducibility. 
+        # Biometrics. 1989 Mar;45(1):255-68. PMID: 2720055.
         mu_d = np.mean(self._x) - np.mean(self._y)
         s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(self._x, self._y, bias=True).flatten()
 
@@ -85,6 +87,54 @@ class Agreement:
             limit=ccc_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
         )
 
+        return self
+
+    def ccc_ustat(self) -> SAgreement:
+        # King TS, Chinchilli VM. 
+        # Robust estimators of the concordance correlation coefficient. 
+        # J Biopharm Stat. 2001;11(3):83-105. doi: 10.1081/BIP-100107651. PMID: 11725932.
+
+        sx = np.sum(self._x)
+        sy = np.sum(self._y)
+        ssx = np.sum(self._x**2)
+        ssy = np.sum(self._y**2)
+
+        xy = self._x * self._y
+        dss = self._x**2 - ssx / self._n + self._y**2 - ssy / self._n
+        ds_sq = self._x * sy + self._y * sx - sx * sy / self._n
+        sxy = np.sum(xy)
+
+        u1 = -4 / (self._n - 1) * sxy
+        u2 = 2 / (self._n - 1) * (ssx + ssy)
+        u3 = -4 / (self._n * (self._n - 1)) * (sx * sy)
+
+        h = (self._n - 1) * (u3 - u1)
+        g = u1 + self._n * u2+ (self._n - 1)*u3
+
+        v_u1 = 64 / (self._n-1)**2 * np.sum(xy**2)
+        v_u2 = 4 / ((self._n-1)**2 * self._n**2) * np.sum(dss**2)
+        v_u3 = 64 / ((self._n-1)**2 * self._n**2) * np.sum(ds_sq**2)
+
+        cov_u1_u2 = -14 / (self._n-1)**2 * np.sum(xy * dss)
+        cov_u1_u3 = 64 / ((self._n-1)**2 * self._n) * np.sum(xy * ds_sq)
+        cov_u2_u3 = -16 / ((self._n-1)**2 * self._n) * np.sum(dss * ds_sq)
+
+        s_sq_h = (self._n-1)**2 * (v_u3 + v_u1 - 2 * cov_u1_u3)
+        s_sq_g = (self._n-1)**2 * v_u3 + v_u1 + self._n**2 * v_u2 + 2*(self._n-1) * cov_u1_u3 \
+            + 2 * self._n**2 * cov_u2_u3
+        s_hg = -(self._n-1)*(self._n-2)*cov_u1_u3 + self._n*(self._n-1)*cov_u2_u3 + (self._n-1)**2*v_u3 \
+            - (self._n-1)*v_u1 - self._n*(self._n-1)*cov_u1_u2
+        
+        ccc_hat = h/g
+        var_ccc_hat = ccc_hat**2 * (s_sq_h / h**2 - 2 * s_hg / (h * g) + s_sq_g / g**2)
+
+        ccc_range = TransformEstimator(ccc_hat, var_ccc_hat, TransformFunc.Z)
+        self._ccc_ustat = Estimator(
+            name="ccc_ustat",
+            estimator=ccc_hat,
+            variance=var_ccc_hat,
+            limit=ccc_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
+        )
         return self
     
     def cp_tdi_approximation(self) -> SAgreement:
