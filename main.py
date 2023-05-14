@@ -3,8 +3,6 @@
 # This file is part of adventOfCode project from https://github.com/remyCases/StatiscalAgreement.
 
 import numpy as np
-import matplotlib.pyplot as plt
-from pyCompare import blandAltman
 import src.StatisticalAgreement as sa
 
 if __name__ == "__main__":
@@ -14,11 +12,4 @@ if __name__ == "__main__":
                        delta_criterion_for_cp=5, 
                        pi_criterion_for_tdi=0.9)
     
-    agr.ccc_approximation().cp_tdi_approximation().ccc_ustat()
-    print(agr._ccc)
-    print(agr._ccc_ustat)
-
-    plt.hist(X-Y)
-    plt.show()
-
-    blandAltman(X, Y)
+    sa.ccc_simulation(n_mc=1000, n_data=10)

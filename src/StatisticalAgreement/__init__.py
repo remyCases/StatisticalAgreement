@@ -3,3 +3,4 @@
 # This file is part of adventOfCode project from https://github.com/remyCases/StatiscalAgreement.
 
 from .agreement import Agreement
+from .ccc_simulation import ccc_simulation

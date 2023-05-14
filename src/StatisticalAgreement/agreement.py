@@ -115,7 +115,7 @@ class Agreement:
         v_u2 = 4 / ((self._n-1)**2 * self._n**2) * np.sum(dss**2)
         v_u3 = 64 / ((self._n-1)**2 * self._n**2) * np.sum(ds_sq**2)
 
-        cov_u1_u2 = -14 / (self._n-1)**2 * np.sum(xy * dss)
+        cov_u1_u2 = -16 / (self._n-1)**2 * np.sum(xy * dss)
         cov_u1_u3 = 64 / ((self._n-1)**2 * self._n) * np.sum(xy * ds_sq)
         cov_u2_u3 = -16 / ((self._n-1)**2 * self._n) * np.sum(dss * ds_sq)
 
@@ -127,6 +127,7 @@ class Agreement:
         
         ccc_hat = h/g
         var_ccc_hat = ccc_hat**2 * (s_sq_h / h**2 - 2 * s_hg / (h * g) + s_sq_g / g**2)
+        var_z_hat = var_ccc_hat / (1 - ccc_hat**2)**2
 
         ccc_range = TransformEstimator(ccc_hat, var_ccc_hat, TransformFunc.Z)
         self._ccc_ustat = Estimator(
@@ -134,6 +135,12 @@ class Agreement:
             estimator=ccc_hat,
             variance=var_ccc_hat,
             limit=ccc_range.ci(ALPHA, ConfidentLimit.Lower, self._n)
+        )
+        self._z_ustat = Estimator(
+            name="z_ustat",
+            estimator=TransformFunc.Z.apply(ccc_hat),
+            variance=var_z_hat,
+            limit=np.nan
         )
         return self
     
