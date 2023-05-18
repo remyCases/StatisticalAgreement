@@ -94,42 +94,42 @@ class Agreement:
         # Robust estimators of the concordance correlation coefficient. 
         # J Biopharm Stat. 2001;11(3):83-105. doi: 10.1081/BIP-100107651. PMID: 11725932.
 
+        n = self._n
         sx = np.sum(self._x)
         sy = np.sum(self._y)
         ssx = np.sum(self._x**2)
         ssy = np.sum(self._y**2)
 
         xy = self._x * self._y
-        dss = self._x**2 - ssx / self._n + self._y**2 - ssy / self._n
-        ds_sq = self._x * sy + self._y * sx - sx * sy / self._n
         sxy = np.sum(xy)
 
-        u1 = -4 / (self._n - 1) * sxy
-        u2 = 2 / (self._n - 1) * (ssx + ssy)
-        u3 = -4 / (self._n * (self._n - 1)) * (sx * sy)
+        u1 = -4/n * sxy
+        u2 = 2/n * (ssx + ssy)
+        u3 = -4/(n*(n-1)) * (sx * sy - sxy)
 
-        h = (self._n - 1) * (u3 - u1)
-        g = u1 + self._n * u2+ (self._n - 1)*u3
+        h = (n-1) * (u3 - u1)
+        g = u1 + n*u2 + (n-1)*u3
 
-        v_u1 = 64 / (self._n-1)**2 * np.sum(xy**2)
-        v_u2 = 4 / ((self._n-1)**2 * self._n**2) * np.sum(dss**2)
-        v_u3 = 64 / ((self._n-1)**2 * self._n**2) * np.sum(ds_sq**2)
+        psi1 = (n-2)*xy + sxy/n
+        psi2 = (n-2) * (self._x**2 - ssx / n + self._y**2 - ssy / n)
+        psi3 = (self._x * sy + self._y * sx - sx * sy / n + 2*xy + sxy/n)
 
-        cov_u1_u2 = -16 / (self._n-1)**2 * np.sum(xy * dss)
-        cov_u1_u3 = 64 / ((self._n-1)**2 * self._n) * np.sum(xy * ds_sq)
-        cov_u2_u3 = -16 / ((self._n-1)**2 * self._n) * np.sum(dss * ds_sq)
-
-        s_sq_h = (self._n-1)**2 * (v_u3 + v_u1 - 2 * cov_u1_u3)
-        s_sq_g = (self._n-1)**2 * v_u3 + v_u1 + self._n**2 * v_u2 + 2*(self._n-1) * cov_u1_u3 \
-            + 2 * self._n**2 * cov_u2_u3
-        s_hg = -(self._n-1)*(self._n-2)*cov_u1_u3 + self._n*(self._n-1)*cov_u2_u3 + (self._n-1)**2*v_u3 \
-            - (self._n-1)*v_u1 - self._n*(self._n-1)*cov_u1_u2
+        v_u1 = 64*np.sum(psi1**2)/(n**2*(n-1)**2)
+        v_u2 = 4*np.sum(psi2**2)/(n**2*(n-1)**2)
+        v_u3 = 64*np.sum(psi3**2)/(n**2*(n-1)**2)
+        cov_u1_u2 = -16*np.sum(psi1*psi2)/(n**2*(n-1)**2)
+        cov_u1_u3 = 64*np.sum(psi1*psi3)/(n**2*(n-1)**2)   
+        cov_u2_u3 = -16*np.sum(psi2*psi3)/(n**2*(n-1)**2)
+        
+        s_sq_h = (n-1)**2 * (v_u3 + v_u1 - 2 * cov_u1_u3)
+        s_sq_g = (n-1)**2*v_u3 + v_u1 + n**2*v_u2 + 2*(n-1)*cov_u1_u3 + 2*n*cov_u2_u3
+        s_hg = -(n-1)*(n-2)*cov_u1_u3 + n*(n-1)*cov_u2_u3 + (n-1)**2*v_u3 - (n-1)*v_u1 - n*(n-1)*cov_u1_u2
         
         ccc_hat = h/g
-        var_ccc_hat = ccc_hat**2 * (s_sq_h / h**2 - 2 * s_hg / (h * g) + s_sq_g / g**2)
+        var_ccc_hat = ccc_hat**2 * (s_sq_h / h**2 - 2*s_hg / (h*g) + s_sq_g / g**2)
         var_z_hat = var_ccc_hat / (1 - ccc_hat**2)**2
-
-        ccc_range = TransformEstimator(ccc_hat, var_ccc_hat, TransformFunc.Z)
+        
+        ccc_range = TransformEstimator(ccc_hat, var_z_hat, TransformFunc.Z)
         self._ccc_ustat = Estimator(
             name="ccc_ustat",
             estimator=ccc_hat,

@@ -3,6 +3,13 @@
 # This file is part of adventOfCode project from https://github.com/remyCases/StatiscalAgreement.
 
 import numpy as np
+from typing import NamedTuple
+
+class McCi(NamedTuple):
+    mean: float
+    var: float
+    lower: float
+    upper: float
 
 class MonteCarlo():
     def __init__(self):
@@ -23,4 +30,9 @@ class MonteCarlo():
 
         self._mean = self._sum / self._n
         self._var = self._sum_sq / self._n - self._mean * self._mean
-        return self._mean, self._var
+        return McCi(
+            mean=self._mean,
+            var=self._var,
+            lower=self._mean - 1.96*np.sqrt(self._var/self._n),
+            upper=self._mean + 1.96*np.sqrt(self._var/self._n)
+            )
