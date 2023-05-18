@@ -22,6 +22,12 @@ if __name__ == "__main__":
         agr = sa.Agreement(X, Y, 
                         delta_criterion_for_cp=5, 
                         pi_criterion_for_tdi=0.9)
-        agr.ccc_approximation().ccc_ustat()
+        agr.ccc_approximation()
+        agr.ccc_ustat()
+        agr.cp_tdi_approximation()
         print(agr._ccc)
         print(agr._ccc_ustat)
+        print(agr._z_ustat)
+        print(agr._cp)
+        print(agr._tdi)
+        print(agr._rbs)

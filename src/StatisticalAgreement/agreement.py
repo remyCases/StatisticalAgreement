@@ -186,12 +186,11 @@ class Agreement:
         )
 
         coeff_tdi = norm.ppf(1 - (1 - self._pi_criterion) / 2)
-        tdi_hat = coeff_tdi * np.sqrt(eps_sq_hat)
         self._tdi = Estimator(
             name="tdi",
-            estimator=tdi_hat,
+            estimator=coeff_tdi * np.sqrt(self._msd.estimator),
             variance=np.nan,
-            limit=np.nan
+            limit=coeff_tdi * np.sqrt(self._msd.limit)
         )
 
         return self
