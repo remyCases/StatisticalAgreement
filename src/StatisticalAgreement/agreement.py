@@ -121,12 +121,12 @@ class Agreement:
         cov_u1_u3 = 64*np.sum(psi1*psi3)/(n**2*(n-1)**2)   
         cov_u2_u3 = -16*np.sum(psi2*psi3)/(n**2*(n-1)**2)
         
-        s_sq_h = (n-1)**2 * (v_u3 + v_u1 - 2 * cov_u1_u3)
-        s_sq_g = (n-1)**2*v_u3 + v_u1 + n**2*v_u2 + 2*(n-1)*cov_u1_u3 + 2*n*cov_u2_u3
-        s_hg = -(n-1)*(n-2)*cov_u1_u3 + n*(n-1)*cov_u2_u3 + (n-1)**2*v_u3 - (n-1)*v_u1 - n*(n-1)*cov_u1_u2
+        v_h = (n-1)**2 * (v_u3 + v_u1 - 2 * cov_u1_u3)
+        v_g = v_u1 + n**2*v_u2 + (n-1)**2*v_u3 + 2*n*cov_u1_u2 + 2*(n-1)*cov_u1_u3 + 2*n*(n-1)*cov_u2_u3
+        cov_h_g = (n-1)*(-(n-2)*cov_u1_u3 + n*cov_u2_u3 + (n-1)*v_u3 - v_u1 - n*cov_u1_u2)
         
         ccc_hat = h/g
-        var_ccc_hat = ccc_hat**2 * (s_sq_h / h**2 - 2*s_hg / (h*g) + s_sq_g / g**2)
+        var_ccc_hat = ccc_hat**2 * (v_h / h**2 - 2*cov_h_g / (h*g) + v_g / g**2)
         var_z_hat = var_ccc_hat / (1 - ccc_hat**2)**2
         
         ccc_range = TransformEstimator(ccc_hat, var_z_hat, TransformFunc.Z)
