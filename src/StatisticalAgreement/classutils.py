@@ -4,6 +4,7 @@
 
 from enum import Enum
 import numpy as np
+import pandas as pd
 from scipy.stats import norm, t
 from dataclasses import dataclass
 
@@ -66,3 +67,10 @@ class Estimator:
     estimator: float
     variance: float
     limit: float
+
+    def to_series(self):
+        return pd.Series({
+            "estimator": self.estimator,
+            "variance": self.variance,
+            "limit": self.limit
+            })

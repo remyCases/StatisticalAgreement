@@ -9,7 +9,7 @@
 import numpy as np
 import pandas as pd
 from typing import TypeVar
-from scipy.stats import norm, ncx2
+from scipy.stats import norm, ncx2, shapiro
 from .classutils import TransformFunc, ConfidentLimit, TransformEstimator, Estimator
 
 ALPHA = 0.05
@@ -111,8 +111,8 @@ class Agreement:
         g = u1 + n*u2 + (n-1)*u3
 
         psi1 = (n-2)*xy + sxy/n
-        psi2 = (n-2) * (self._x**2 - ssx / n + self._y**2 - ssy / n)
-        psi3 = (self._x * sy + self._y * sx - sx * sy / n + 2*xy + sxy/n)
+        psi2 = (n-2)*(self._x**2 - ssx / n + self._y**2 - ssy / n)
+        psi3 = self._x * sy + self._y * sx - sx * sy / n + 2*xy + sxy/n
 
         v_u1 = 64*np.sum(psi1**2)/(n**2*(n-1)**2)
         v_u2 = 4*np.sum(psi2**2)/(n**2*(n-1)**2)
@@ -196,36 +196,25 @@ class Agreement:
         return self
     
     def show(self) -> None:
-        self.res = pd.DataFrame(columns=["estimator", "variance", "limit", "criterion", "allowance"], 
-                                index=["msd", "accuracy", "precision", "ccc", "cp", "tdi", "rbs"])
+        self.res = pd.DataFrame(columns=["estimator", "variance", "limit", "criterion", "allowance"])
         
-        self.res.loc["accuracy", "estimator"] = self._acc.estimator
-        self.res.loc["accuracy", "variance"] = self._acc.variance
-        self.res.loc["accuracy", "limit"] = self._acc.limit
-                
-        self.res.loc["precision", "estimator"] = self._rho.estimator
-        self.res.loc["precision", "variance"] = self._rho.variance
-        self.res.loc["precision", "limit"] = self._rho.limit
+        self.res.loc[self._acc.name, :] = self._acc.to_series()
+        self.res.loc[self._rho.name, :] = self._rho.to_series()
+        self.res.loc[self._ccc.name, :] = self._ccc.to_series()
+        self.res.loc[self._ccc_ustat.name, :] = self._ccc_ustat.to_series()
+        self.res.loc[self._msd.name, :] = self._msd.to_series()
+        self.res.loc[self._rbs.name, :] = self._rbs.to_series()
+        self.res.loc[self._cp.name, :] = self._cp.to_series()
+        self.res.loc[self._tdi.name, :] = self._tdi.to_series()
 
-        self.res.loc["ccc", "estimator"] = self._ccc.estimator
-        self.res.loc["ccc", "variance"] = self._ccc.variance
-        self.res.loc["ccc", "limit"] = self._ccc.limit
-        self.res.loc["ccc", "allowance"] = 1 - WITHIN_SAMPLE_DEVIATION**2
+        self.res.loc[self._ccc.name, "allowance"] = 1 - WITHIN_SAMPLE_DEVIATION**2
+        self.res.loc[self._ccc_ustat.name, "allowance"] = 1 - WITHIN_SAMPLE_DEVIATION**2
+        self.res.loc[self._rbs.name, "allowance"] = cp_tdi_approximation(self._rbs.estimator, CP_ALLOWANCE)
+        self.res.loc[self._cp.name, "allowance"] = CP_ALLOWANCE
+        self.res.loc[self._tdi.name, "allowance"] = TDI_ALLOWANCE
 
-        self.res.loc["msd", "estimator"] = self._msd.estimator
-        self.res.loc["msd", "variance"] = self._msd.variance
-        self.res.loc["msd", "limit"] = self._msd.limit
-
-        self.res.loc["rbs", "estimator"] = self._rbs.estimator
-        self.res.loc["rbs", "allowance"] = cp_tdi_approximation(self._rbs.estimator, CP_ALLOWANCE)
-
-        self.res.loc["cp", "estimator"] = self._cp.estimator
-        self.res.loc["cp", "variance"] = self._cp.variance
-        self.res.loc["cp", "limit"] = self._cp.limit
-        self.res.loc["cp", "criterion"] = self._delta_criterion
-        self.res.loc["cp", "allowance"] = CP_ALLOWANCE
-
-        self.res.loc["tdi", "estimator"] = self._tdi.estimator
-        self.res.loc["tdi", "criterion"] = self._pi_criterion
-        self.res.loc["tdi", "allowance"] = TDI_ALLOWANCE
+        self.res.loc[self._cp.name, "criterion"] = self._delta_criterion
+        self.res.loc[self._tdi.name, "criterion"] = self._pi_criterion
+        
         print(self.res)
+        print(shapiro(self._x - self._y))
