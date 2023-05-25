@@ -1,12 +1,12 @@
 # Copyright (C) 2023 Rémy Cases
 # See LICENSE file for extended copyright information.
-# This file is part of adventOfCode project from https://github.com/remyCases/StatiscalAgreement.
+# This file is part of StatisticalAgreement project from https://github.com/remyCases/StatiscalAgreement.
 
 from enum import Enum
 import numpy as np
 import pandas as pd
 from scipy.stats import norm, t
-from dataclasses import dataclass
+from dataclasses import dataclass, field, InitVar
 
 class TransformFunc(Enum):
     Id = 0
@@ -38,39 +38,64 @@ class ConfidentLimit(Enum):
     Lower = 0
     Upper = 1
 
-class TransformEstimator:
-    _esp: float
-    _var: float
-    _t: TransformFunc
-
-    def __init__(self, point_estimator: float, variance_estimator: float, transform_func: TransformFunc) -> None:
-        self._esp = point_estimator
-        self._var = variance_estimator
-        self._t = transform_func
-
-    def ci(self, alpha: float, limit: ConfidentLimit, n = 30) -> float:
-        if n >= 30:
-            coeff = norm.ppf(1 - alpha)
-        else:
-            coeff = t.ppf(1 - alpha, n - 1)
-
-        if limit == ConfidentLimit.Upper:
-            transformed_limit = self._t.apply(self._esp) + coeff * np.sqrt(self._var)
-        if limit == ConfidentLimit.Lower:
-            transformed_limit = self._t.apply(self._esp) - coeff * np.sqrt(self._var)
-
-        return self._t.apply_inv(transformed_limit)
-
 @dataclass
 class Estimator:
-    name: str
     estimator: float
-    variance: float
     limit: float
+    allowance: float
 
     def to_series(self):
         return pd.Series({
             "estimator": self.estimator,
-            "variance": self.variance,
             "limit": self.limit
             })
+    
+@dataclass
+class TransformedEstimator:
+    estimator: float
+    variance: float | None = None
+    transformed_function: TransformFunc | None = None
+    transformed_estimator: float = field(init=False)
+    transformed_variance: float | None = None
+    limit: float | None = None
+    allowance: float | None = None
+    robust: bool = False
+    alpha: InitVar[float | None] = None
+    confident_limit: InitVar[ConfidentLimit | None] = None
+    n: InitVar[int] = 30
+
+    def __post_init__(self, alpha, confident_limit, n) -> None:
+        if self.variance is not None:
+            if n >= 30:
+                coeff = norm.ppf(1 - alpha)
+            else:
+                coeff = t.ppf(1 - alpha, n - 1)
+
+            self.transformed_estimator = self.transformed_function.apply(self.estimator)
+            if self.transformed_variance is None:
+                self.transformed_variance = self.variance
+
+            if confident_limit == ConfidentLimit.Upper:
+                print("up")
+                transformed_limit = self.transformed_estimator + coeff * np.sqrt(self.transformed_variance)
+            if confident_limit == ConfidentLimit.Lower:
+                transformed_limit = self.transformed_estimator - coeff * np.sqrt(self.transformed_variance)
+
+            self.limit = self.transformed_function.apply_inv(transformed_limit)
+        else:
+            self.transformed_estimator = None
+
+    def to_series(self):
+        return pd.Series({
+            "estimator": self.estimator,
+            "limit": self.limit,
+            "variance": self.variance,
+            "transformed_function": self.transformed_function,
+            "transformed_estimator": self.transformed_estimator,
+            "transformed_variance": self.transformed_variance,
+            "allowance": self.allowance,
+            "robust": self.robust,
+            })
+    
+    def as_estimator(self) -> Estimator:
+        return Estimator(estimator=self.estimator, limit=self.limit, allowance=self.allowance)

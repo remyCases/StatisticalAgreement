@@ -1,6 +1,6 @@
 # Copyright (C) 2023 Rémy Cases
 # See LICENSE file for extended copyright information.
-# This file is part of adventOfCode project from https://github.com/remyCases/StatiscalAgreement.
+# This file is part of StatisticalAgreement project from https://github.com/remyCases/StatiscalAgreement.
 
 import numpy as np
 import numpy.typing as npt
@@ -16,10 +16,17 @@ class Models(NamedTuple):
     cov: npt.ArrayLike
 
 # Based on 
+# Lin LI. 
+# A concordance correlation coefficient to evaluate reproducibility. 
+# Biometrics. 1989 Mar;45(1):255-68. PMID: 2720055.
+
+# and 
+
 # King TS, Chinchilli VM. 
 # Robust estimators of the concordance correlation coefficient. 
 # J Biopharm Stat. 2001;11(3):83-105. doi: 10.1081/BIP-100107651. PMID: 11725932.
 # pages 90-94 
+
 MODELS = {
     '1': Models(mean=np.array([0, 0]), 
                 cov=np.array([[1, 0.95], [0.95, 1]])),
@@ -28,8 +35,14 @@ MODELS = {
     '3': Models(mean=np.array([-np.sqrt(0.25)/2, np.sqrt(0.25)/2]), 
                 cov=np.array([[(4/3)**2, 0.5*4/3*2/3], [0.5*4/3*2/3, (2/3)**2]]))}
 
+EXPECTED_CCC = {
+    '1': 0.95,
+    '2': 0.887,
+    '3': 0.360
+}
+
 def ccc_simulation():
-    data_possibilities = [10, 20, 40, 80]
+    data_possibilities = [10, 20, 50]
     models_possibilities = ['1', '2', '3']
     tupleIndex = tuple(product(data_possibilities, models_possibilities, ['ccc', 'z']))
     multiIndex = pd.MultiIndex.from_tuples(tupleIndex, names=('n', 'case', 'estimator'))
@@ -60,7 +73,7 @@ def ccc_simulation_from_model_and_ndata(nIteration: int, nData: int, model: str,
     for i in range(nIteration):
         multidim = multivariate_normal.rvs(mean=mean, cov=cov, size=nData)
         agrtest = sa.Agreement(multidim[:, 0], multidim[:, 1])
-        agrtest.ccc_ustat()
+        agrtest.ccc()
         array_ccc_ustat[i] = agrtest._ccc_ustat.estimator
         array_z_ustat[i] = agrtest._z_ustat.estimator
         array_z_ustat_var[i] = agrtest._z_ustat.variance
