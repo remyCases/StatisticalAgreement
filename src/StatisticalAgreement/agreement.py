@@ -6,10 +6,11 @@
 ## Total deviation index for measuring individual agreement with applications in 
 ## laboratory performance and bioequivalence. Statistics in Medicine, 19(2), 255–270
 
+import warnings
 import numpy as np
 import pandas as pd
 from scipy.stats import norm, chi2, shapiro
-from .classutils import TransformFunc, ConfidentLimit, TransformedEstimator, Estimator
+from .classutils import FlagData, TransformFunc, ConfidentLimit, TransformedEstimator, Estimator
 
 ALPHA = 0.05
 CP_DELTA = 0.5
@@ -53,7 +54,7 @@ def _precision(x, y, alpha: float) -> TransformedEstimator:
 
     var_rho_hat = (1 - rho_hat**2/2)/(n-3)
     rho = TransformedEstimator(
-        estimator=rho_hat, 
+        estimate=rho_hat, 
         variance=var_rho_hat, 
         transformed_function=TransformFunc.Z,
         alpha=alpha, 
@@ -65,7 +66,7 @@ def _precision(x, y, alpha: float) -> TransformedEstimator:
 def _accuracy(x, y, precision: TransformedEstimator, alpha: float) -> TransformedEstimator:
     n = len(x)
     mu_d = np.mean(x - y)
-    rho_hat = precision.estimator
+    rho_hat = precision.estimate
 
     s_sq_hat_biased_x, _, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
     sqr_var = np.sqrt(s_sq_hat_biased_x * s_sq_hat_biased_y)
@@ -80,7 +81,7 @@ def _accuracy(x, y, precision: TransformedEstimator, alpha: float) -> Transforme
         ) / ((n-2)*(1-acc_hat)**2)
     
     acc = TransformedEstimator(
-        estimator=acc_hat, 
+        estimate=acc_hat, 
         variance=var_acc_hat, 
         transformed_function=TransformFunc.Logit,
         alpha=alpha, 
@@ -96,20 +97,20 @@ def _ccc_lin(x, y,
              allowance_whitin_sample_deviation: float) -> TransformedEstimator:
     n = len(x)
     mu_d = np.mean(x - y)
-    rho_hat = precision.estimator
+    rho_hat = precision.estimate
 
     s_sq_hat_biased_x, _, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
     sqr_var = np.sqrt(s_sq_hat_biased_x * s_sq_hat_biased_y)
     nu_sq_hat = mu_d**2 / sqr_var
 
-    ccc_hat = rho_hat * accuracy.estimator
+    ccc_hat = rho_hat * accuracy.estimate
     var_ccc_hat = 1 / (n - 2) * ((1-rho_hat**2)*ccc_hat**2/rho_hat**2
                                  + 2*ccc_hat**3*(1-ccc_hat)*nu_sq_hat / (rho_hat*(1-ccc_hat**2))
                                  - ccc_hat**4 * nu_sq_hat**2 / (2*rho_hat**2*(1-ccc_hat**2)))
     var_z_hat = var_ccc_hat / (1-ccc_hat**2)
 
     ccc = TransformedEstimator(
-        estimator=ccc_hat, 
+        estimate=ccc_hat, 
         variance=var_ccc_hat, 
         transformed_variance=var_z_hat,
         transformed_function=TransformFunc.Z,
@@ -157,7 +158,7 @@ def _ccc_ustat(x, y, alpha: float, allowance_whitin_sample_deviation: float) -> 
     var_z_hat = var_ccc_hat / (1 - ccc_hat**2)**2
     
     ccc = TransformedEstimator(
-        estimator=ccc_hat, 
+        estimate=ccc_hat, 
         variance=var_ccc_hat, 
         transformed_variance=var_z_hat,
         transformed_function=TransformFunc.Z,
@@ -172,15 +173,13 @@ def _ccc_ustat(x, y, alpha: float, allowance_whitin_sample_deviation: float) -> 
 def _msd(x, y, alpha: float) -> TransformedEstimator:
     n = len(x)
     D = x - y
-    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
-    s_sq_hat_d = n / (n - 3) * (s_sq_hat_biased_x + s_sq_hat_biased_y - 2 * s_hat_biased_xy)
     mu_d = np.mean(D)
 
     eps_sq_hat = np.sum(D**2) / (n - 1)
     var_esp_hat = 2 / (n - 2) * ( 1 - mu_d**4 / eps_sq_hat**2)
 
     msd = TransformedEstimator(
-        estimator=eps_sq_hat, 
+        estimate=eps_sq_hat, 
         variance=var_esp_hat, 
         transformed_function=TransformFunc.Log,
         alpha=alpha, 
@@ -198,7 +197,7 @@ def _rbs(x, y, cp_allowance: float) -> TransformedEstimator:
 
     rbs_hat = mu_d**2 / s_sq_hat_d
     rbs = TransformedEstimator(
-        estimator=rbs_hat,
+        estimate=rbs_hat,
         allowance=rbs_allowance(cp_allowance)
     )
     return rbs
@@ -215,12 +214,12 @@ def _cp_approx(x, y, msd: TransformedEstimator, alpha: float, delta_criterion: f
     delta_minus = (delta_criterion - mu_d) / np.sqrt(s_sq_hat_d)
     n_delta_minus = norm.pdf(delta_minus)
 
-    cp_hat = chi2.cdf(delta_criterion**2 / msd.estimator, df=1)
+    cp_hat = chi2.cdf(delta_criterion**2 / msd.estimate, df=1)
     var_cp_hat = 1/(n-3) * ((n_delta_plus - n_delta_minus)**2 + 0.5*(delta_minus*n_delta_minus + delta_plus*n_delta_plus))
     var_transform_cp_hat = var_cp_hat / ((1-cp_hat)**2*cp_hat**2)
     
     cp = TransformedEstimator(
-        estimator=cp_hat, 
+        estimate=cp_hat, 
         variance=var_cp_hat, 
         transformed_variance=var_transform_cp_hat,
         transformed_function=TransformFunc.Logit,
@@ -248,21 +247,22 @@ def _cp_exact(x, y, alpha: float, delta_criterion: float, cp_allowance: float):
     var_transform_cp_hat = var_cp_hat / ((1-cp_hat)**2*cp_hat**2)
     
     cp = TransformedEstimator(
-        estimator=cp_hat, 
+        estimate=cp_hat, 
         variance=var_cp_hat, 
         transformed_variance=var_transform_cp_hat,
         transformed_function=TransformFunc.Logit,
         allowance=cp_allowance,
+        robust=True,
         alpha=alpha, 
         confident_limit=ConfidentLimit.Lower, 
         n=n
     )
     return cp
 
-def _tdi_approx(x, y, msd: TransformedEstimator, pi_criterion: float, tdi_allowance: float):
+def _tdi_approx(msd: TransformedEstimator, pi_criterion: float, tdi_allowance: float):
     coeff_tdi = norm.ppf(1 - (1 - pi_criterion) / 2)
     tdi = Estimator(
-        estimator=coeff_tdi * np.sqrt(msd.estimator),
+        estimate=coeff_tdi * np.sqrt(msd.estimate),
         limit=coeff_tdi * np.sqrt(msd.limit),
         allowance=tdi_allowance
     )
@@ -283,7 +283,7 @@ def ccc(x, y, method="approx", alpha=ALPHA, allowance_whitin_sample_deviation=WI
         ccc = _ccc_ustat(x, y, alpha, allowance_whitin_sample_deviation)
         return ccc.as_estimator()
     else:
-        raise("Wrong method called for ccc computation")
+        raise ValueError("Wrong method called for ccc computation")
 
 def cp(x, y, delta_criterion: float, method="approx", alpha=ALPHA, cp_allowance=CP_ALLOWANCE) -> Estimator:
     msd = _msd(x, y, alpha)
@@ -294,33 +294,50 @@ def cp(x, y, delta_criterion: float, method="approx", alpha=ALPHA, cp_allowance=
         cp = _cp_exact(x, y, alpha, delta_criterion, cp_allowance).as_estimator()
         return cp
     else:
-        raise("Wrong method called for cp computation")
+        raise ValueError("Wrong method called for cp computation")
 
 def tdi(x, y, pi_criterion: float, alpha=ALPHA, tdi_allowance=TDI_ALLOWANCE) -> Estimator:
     msd = _msd(x, y, alpha)
     print(msd)
-    return _tdi_approx(x, y, msd, pi_criterion, tdi_allowance)
+    return _tdi_approx(msd, pi_criterion, tdi_allowance)
 
 def agreement(x, y, delta_criterion, pi_criterion, alpha=ALPHA,
               allowance_whitin_sample_deviation=WITHIN_SAMPLE_DEVIATION,
               cp_allowance=CP_ALLOWANCE,
               tdi_allowance=TDI_ALLOWANCE,
+              log=False,
               display=False):
     
-    res = pd.DataFrame(columns=["estimator", "limit", "variance", "transformed_function",
-                                "transformed_estimator", "transformed_variance", "allowance",
+    flag = FlagData.Data_Ok
+
+    if log:
+        if np.sum(x<=0) + np.sum(y<=0) > 0:
+            flag = FlagData.Negative
+            raise ValueError("Input data are not positive for a log transformation")
+        else:
+            x=np.log(x)
+            y=np.log(y)
+            delta_criterion=np.log(1+delta_criterion/100)
+
+    res = pd.DataFrame(columns=["estimate", "limit", "variance", "transformed_function",
+                                "transformed_estimate", "transformed_variance", "allowance",
                                 "robust"])
     
-    rho = _precision(x, y, alpha)
-    acc = _accuracy(x, y, rho, alpha)
-    ccc_lin = _ccc_lin(x, y, rho, acc, alpha, allowance_whitin_sample_deviation)
-    ccc_ustat = _ccc_ustat(x, y, alpha, allowance_whitin_sample_deviation)
+    if np.var(x)==0 or np.var(y)==0:
+        flag = FlagData.Negative
+        warnings.warn("Input values are constant, can't compute ccc-related indexes")
+
+    if flag != FlagData.Negative:
+        rho = _precision(x, y, alpha)
+        acc = _accuracy(x, y, rho, alpha)
+        ccc_lin = _ccc_lin(x, y, rho, acc, alpha, allowance_whitin_sample_deviation)
+        ccc_ustat = _ccc_ustat(x, y, alpha, allowance_whitin_sample_deviation)
 
     msd = _msd(x, y, alpha)
     rbs = _rbs(x, y, cp_allowance)
-    cp_approx = _cp_approx(x, y, msd, alpha, delta_criterion, cp_allowance).as_estimator()
-    cp = _cp_exact(x, y, alpha, delta_criterion, cp_allowance).as_estimator()
-    tdi = _tdi_approx(x, y, msd, pi_criterion, tdi_allowance)
+    cp_approx = _cp_approx(x, y, msd, alpha, delta_criterion, cp_allowance)
+    cp = _cp_exact(x, y, alpha, delta_criterion, cp_allowance)
+    tdi = _tdi_approx(msd, pi_criterion, tdi_allowance)
 
     res.loc["acc", :] = acc.to_series()
     res.loc["rho", :] = rho.to_series()
@@ -328,14 +345,17 @@ def agreement(x, y, delta_criterion, pi_criterion, alpha=ALPHA,
     res.loc["ccc_robust", :] = ccc_ustat.to_series()
     res.loc["msd", :] = msd.to_series()
     res.loc["rbs", :] = rbs.to_series()
-    res.loc["cp_approx", :] = cp_approx.to_series()
-    res.loc["cp", :] = cp.to_series()
-    res.loc["tdi", :] = tdi.to_series()
 
-    res.loc["cp_approx", "criterion"] = delta_criterion
-    res.loc["cp", "criterion"] = delta_criterion
-    res.loc["tdi", "criterion"] = pi_criterion
+    if flag != FlagData.Negative:
+        res.loc["cp_approx", :] = cp_approx.to_series()
+        res.loc["cp", :] = cp.to_series()
+        res.loc["tdi", :] = tdi.to_series()
+        res.loc["cp_approx", "criterion"] = delta_criterion
+        res.loc["cp", "criterion"] = delta_criterion
+        res.loc["tdi", "criterion"] = pi_criterion
     
     if display:
         print(res)
         print(shapiro(x - y))
+
+    return flag, res

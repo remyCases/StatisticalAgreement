@@ -8,6 +8,11 @@ import pandas as pd
 from scipy.stats import norm, t
 from dataclasses import dataclass, field, InitVar
 
+class FlagData(Enum):
+    Data_Ok = 0
+    Constant = 1
+    Negative = 2
+
 class TransformFunc(Enum):
     Id = 0
     Log = 1
@@ -40,22 +45,23 @@ class ConfidentLimit(Enum):
 
 @dataclass
 class Estimator:
-    estimator: float
+    estimate: float
     limit: float
     allowance: float
 
     def to_series(self):
         return pd.Series({
-            "estimator": self.estimator,
-            "limit": self.limit
+            "estimate": self.estimate,
+            "limit": self.limit,
+            "allowance": self.allowance,
             })
     
 @dataclass
 class TransformedEstimator:
-    estimator: float
+    estimate: float
     variance: float | None = None
     transformed_function: TransformFunc | None = None
-    transformed_estimator: float = field(init=False)
+    transformed_estimate: float = field(init=False)
     transformed_variance: float | None = None
     limit: float | None = None
     allowance: float | None = None
@@ -71,31 +77,30 @@ class TransformedEstimator:
             else:
                 coeff = t.ppf(1 - alpha, n - 1)
 
-            self.transformed_estimator = self.transformed_function.apply(self.estimator)
+            self.transformed_estimate = self.transformed_function.apply(self.estimate)
             if self.transformed_variance is None:
                 self.transformed_variance = self.variance
 
             if confident_limit == ConfidentLimit.Upper:
-                print("up")
-                transformed_limit = self.transformed_estimator + coeff * np.sqrt(self.transformed_variance)
+                transformed_limit = self.transformed_estimate + coeff * np.sqrt(self.transformed_variance)
             if confident_limit == ConfidentLimit.Lower:
-                transformed_limit = self.transformed_estimator - coeff * np.sqrt(self.transformed_variance)
+                transformed_limit = self.transformed_estimate - coeff * np.sqrt(self.transformed_variance)
 
             self.limit = self.transformed_function.apply_inv(transformed_limit)
         else:
-            self.transformed_estimator = None
+            self.transformed_estimate = None
 
     def to_series(self):
         return pd.Series({
-            "estimator": self.estimator,
+            "estimate": self.estimate,
             "limit": self.limit,
             "variance": self.variance,
             "transformed_function": self.transformed_function,
-            "transformed_estimator": self.transformed_estimator,
+            "transformed_estimate": self.transformed_estimate,
             "transformed_variance": self.transformed_variance,
             "allowance": self.allowance,
             "robust": self.robust,
             })
     
     def as_estimator(self) -> Estimator:
-        return Estimator(estimator=self.estimator, limit=self.limit, allowance=self.allowance)
+        return Estimator(estimate=self.estimate, limit=self.limit, allowance=self.allowance)
