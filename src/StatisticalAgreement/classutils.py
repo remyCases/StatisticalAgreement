@@ -8,6 +8,11 @@ import pandas as pd
 from scipy.stats import norm, t
 from dataclasses import dataclass, field, InitVar
 
+class Indices(Enum):
+    ccc = 0
+    cp = 1
+    tdi = 2
+
 class FlagData(Enum):
     Data_Ok = 0
     Constant = 1

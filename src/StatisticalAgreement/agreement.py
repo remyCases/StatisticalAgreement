@@ -10,9 +10,9 @@ import warnings
 import numpy as np
 import pandas as pd
 from scipy.stats import norm, chi2, shapiro
-from .classutils import FlagData, TransformFunc, ConfidentLimit, TransformedEstimator, Estimator
+from .classutils import Indices, FlagData, TransformFunc, ConfidentLimit, TransformedEstimator, Estimator
 
-ALPHA = 0.05
+DEFAULT_ALPHA = 0.05
 CP_DELTA = 0.5
 TDI_PI = 0.9
 CP_ALLOWANCE = 0.9
@@ -202,7 +202,7 @@ def _rbs(x, y, cp_allowance: float) -> TransformedEstimator:
     )
     return rbs
 
-def _cp_approx(x, y, msd: TransformedEstimator, alpha: float, delta_criterion: float, cp_allowance: float):
+def _cp_approx(x, y, msd: TransformedEstimator, alpha: float, delta_criterion: float, cp_allowance: float) -> TransformedEstimator:
     n = len(x)
     D = x - y
     s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
@@ -230,7 +230,7 @@ def _cp_approx(x, y, msd: TransformedEstimator, alpha: float, delta_criterion: f
     )
     return cp
 
-def _cp_exact(x, y, alpha: float, delta_criterion: float, cp_allowance: float):
+def _cp_exact(x, y, alpha: float, delta_criterion: float, cp_allowance: float) -> TransformedEstimator:
     n = len(x)
     D = x - y
     s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
@@ -259,48 +259,93 @@ def _cp_exact(x, y, alpha: float, delta_criterion: float, cp_allowance: float):
     )
     return cp
 
-def _tdi_approx(msd: TransformedEstimator, pi_criterion: float, tdi_allowance: float):
+def _tdi_approx(msd: TransformedEstimator, pi_criterion: float, tdi_allowance: float)  -> TransformedEstimator:
     coeff_tdi = norm.ppf(1 - (1 - pi_criterion) / 2)
-    tdi = Estimator(
-        estimate=coeff_tdi * np.sqrt(msd.estimate),
+    tdi = TransformedEstimator(
+        estimate=coeff_tdi * np.sqrt(msd.estimate), 
         limit=coeff_tdi * np.sqrt(msd.limit),
-        allowance=tdi_allowance
+        allowance=tdi_allowance,
+        robust=False,
+        confident_limit=ConfidentLimit.Upper
     )
     return tdi
     
-def ccc(x, y, method="approx", alpha=ALPHA, allowance_whitin_sample_deviation=WITHIN_SAMPLE_DEVIATION) -> Estimator:
-    if method == "approx":
-        # Lin LI. A concordance correlation coefficient to evaluate reproducibility. 
-        # Biometrics. 1989 Mar;45(1):255-68. PMID: 2720055.
-        rho = _precision(x, y, alpha)
-        acc = _accuracy(x, y, rho, alpha)
-        ccc = _ccc_lin(x, y, rho, acc, alpha, allowance_whitin_sample_deviation)
-        return ccc.as_estimator()
-    elif method == "ustat":
-        # King TS, Chinchilli VM. 
-        # Robust estimators of the concordance correlation coefficient. 
-        # J Biopharm Stat. 2001;11(3):83-105. doi: 10.1081/BIP-100107651. PMID: 11725932.
-        ccc = _ccc_ustat(x, y, alpha, allowance_whitin_sample_deviation)
-        return ccc.as_estimator()
-    else:
-        raise ValueError("Wrong method called for ccc computation")
+class agreement_index:
+    def __init__(self, name: Indices):
+        self._name = name
 
-def cp(x, y, delta_criterion: float, method="approx", alpha=ALPHA, cp_allowance=CP_ALLOWANCE) -> Estimator:
-    msd = _msd(x, y, alpha)
-    if method == "approx":
-        cp = _cp_approx(x, y, msd, alpha, delta_criterion, cp_allowance).as_estimator()
-        return cp
-    elif method == "exact":
-        cp = _cp_exact(x, y, alpha, delta_criterion, cp_allowance).as_estimator()
-        return cp
-    else:
-        raise ValueError("Wrong method called for cp computation")
+    def __call__(self, x, y, method="approx", alpha=DEFAULT_ALPHA, criterion=0.0, allowance=0.0) -> Estimator:
+        '''
+        Compute index estimate and its confident interval
 
-def tdi(x, y, pi_criterion: float, alpha=ALPHA, tdi_allowance=TDI_ALLOWANCE) -> Estimator:
-    msd = _msd(x, y, alpha)
-    return _tdi_approx(msd, pi_criterion, tdi_allowance)
+        Parameters
+        ----------
+        x : array_like of float
+            Target values.
+        y : array_like of float
+            Observation values, should have the same length as x.
+        method : str, default: approx
+            Method used to compute the index.
+        alpha : float, default: 0.05
+            Confident level used in confident interval computation.
+        criterion : float, optional
+            Criterion used in some index computation (CP and TDI).
+        allowance : float, optional
+            Allowance level to assert agreement.
 
-def agreement(x, y, delta_criterion, pi_criterion, alpha=ALPHA,
+        Returns
+        -------
+        Estimator
+            dataclass storing estimate of index, its confident limit and allowance if given.
+
+        Raises
+        ------
+        ValueError
+            If wrong method is given.
+
+        Examples
+        --------
+        >>> X = np.array([12, 10, 13, 10])
+        >>> Y = np.array([11, 12, 16, 9])
+        >>> sa.ccc(X, Y, method='approx', alpha=0.05, allowance=0.10)
+        Estimator(estimate=0.5714285714285715, limit=-0.4247655971444191, allowance=0.99)
+        '''
+        
+        if self._name == Indices.ccc:
+            if method == "approx":
+                # Lin LI. A concordance correlation coefficient to evaluate reproducibility. 
+                # Biometrics. 1989 Mar;45(1):255-68. PMID: 2720055.
+                rho = _precision(x, y, alpha)
+                acc = _accuracy(x, y, rho, alpha)
+                index = _ccc_lin(x, y, rho, acc, alpha, allowance)
+            elif method == "ustat":
+                # King TS, Chinchilli VM. 
+                # Robust estimators of the concordance correlation coefficient. 
+                # J Biopharm Stat. 2001;11(3):83-105. doi: 10.1081/BIP-100107651. PMID: 11725932.
+                index = _ccc_ustat(x, y, alpha, allowance)
+            else:
+                raise ValueError("Wrong method called for ccc computation, current possible methods are approx or ustat.")
+        elif self._name == Indices.cp:
+            msd = _msd(x, y, alpha)
+            if method == "approx":
+                index = _cp_approx(x, y, msd, alpha, criterion, allowance)
+            elif method == "exact":
+                index = _cp_exact(x, y, alpha, criterion, allowance)
+            else:
+                raise ValueError("Wrong method called for cp computation, current possible methods are approx or exact.")
+        elif self._name == Indices.tdi:
+            if method == "approx":
+                msd = _msd(x, y, alpha)
+                index = _tdi_approx(msd, criterion, allowance)
+            else:
+                raise ValueError("Wrong method called for tdi computation, current possible methods are approx.")
+        return index.as_estimator()
+
+ccc = agreement_index(name=Indices.ccc)
+cp = agreement_index(name=Indices.cp)
+tdi = agreement_index(name=Indices.tdi)
+
+def agreement(x, y, delta_criterion, pi_criterion, alpha=DEFAULT_ALPHA,
               allowance_whitin_sample_deviation=WITHIN_SAMPLE_DEVIATION,
               cp_allowance=CP_ALLOWANCE,
               tdi_allowance=TDI_ALLOWANCE,
@@ -323,10 +368,10 @@ def agreement(x, y, delta_criterion, pi_criterion, alpha=ALPHA,
                                 "robust"])
     
     if np.var(x)==0 or np.var(y)==0:
-        flag = FlagData.Negative
+        flag = FlagData.Constant
         warnings.warn("Input values are constant, can't compute ccc-related indexes")
 
-    if flag != FlagData.Negative:
+    if flag != FlagData.Constant:
         rho = _precision(x, y, alpha)
         acc = _accuracy(x, y, rho, alpha)
         ccc_lin = _ccc_lin(x, y, rho, acc, alpha, allowance_whitin_sample_deviation)
