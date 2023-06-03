@@ -3,4 +3,4 @@
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatiscalAgreement.
 
 from .agreement import agreement, ccc, cp, tdi
-from .ccc_simulation import ccc_simulation
+from .mc_simulation import ccc_simulation

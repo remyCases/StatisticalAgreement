@@ -274,7 +274,12 @@ class agreement_index:
     def __init__(self, name: Indices):
         self._name = name
 
-    def __call__(self, x, y, method="approx", alpha=DEFAULT_ALPHA, criterion=0.0, allowance=0.0) -> Estimator:
+    def __call__(self, x, y, 
+                 method="approx", 
+                 alpha=DEFAULT_ALPHA, 
+                 criterion=0.0, 
+                 allowance=0.0, 
+                 transformed=False) -> Estimator | TransformedEstimator:
         '''
         Compute index estimate and its confident interval
 
@@ -292,6 +297,9 @@ class agreement_index:
             Criterion used in some index computation (CP and TDI).
         allowance : float, optional
             Allowance level to assert agreement.
+        transformed : bool, default: False
+            If true return the transformedEstimator with all data used to computed estimate and confident limit,
+            else return only estimate and confident limit.
 
         Returns
         -------
@@ -345,7 +353,10 @@ class agreement_index:
             else:
                 raise ValueError("Wrong method called for tdi computation, current possible methods are approx.")
         
-        return index.as_estimator()
+        if transformed:
+            return index
+        else:
+            return index.as_estimator()
 
 ccc = agreement_index(name=Indices.ccc)
 cp = agreement_index(name=Indices.cp)
