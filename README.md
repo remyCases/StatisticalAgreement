@@ -9,7 +9,7 @@ Currently, only implementations for basic continuous or categorical models are p
 This project is not a proper python package yet. It will be distributed in the future via Pypi. Thus, to use it, you need to clone the current repo and include in your project.
 
 
-You can find examples in the example folder *(WIP, look at the main.py file instead)*. Current functions are:
+You can find examples in the example folder. Current functions are:
 ```python
 import src.StatisticalAgreement as sa
 X = np.array([10, 11, 12, 10, 13])

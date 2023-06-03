@@ -2,9 +2,9 @@
 # See LICENSE file for extended copyright information.
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatiscalAgreement.
 
-import numpy as np
 import argparse
 import src.StatisticalAgreement as sa
+from examples import examples
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -17,9 +17,4 @@ if __name__ == "__main__":
         sa.ccc_simulation()
 
     if args.example:
-        X = np.array([10, 11, 12, 10, 13, 15, 100, 102, 101, 100, 20, 25, 22, 20, 100, 105, 103, 105])
-        Y = np.array([11, 11, 11, 12, 16, 16, 100, 103, 99, 99, 22, 21, 21, 20, 99, 101, 104, 107])
-
-        delta_criterion_for_cp=2
-        pi_criterion_for_tdi=0.9
-        sa.agreement(X, Y, delta_criterion_for_cp, pi_criterion_for_tdi, display=True)
+        examples.main()

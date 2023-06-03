@@ -298,7 +298,6 @@ def cp(x, y, delta_criterion: float, method="approx", alpha=ALPHA, cp_allowance=
 
 def tdi(x, y, pi_criterion: float, alpha=ALPHA, tdi_allowance=TDI_ALLOWANCE) -> Estimator:
     msd = _msd(x, y, alpha)
-    print(msd)
     return _tdi_approx(msd, pi_criterion, tdi_allowance)
 
 def agreement(x, y, delta_criterion, pi_criterion, alpha=ALPHA,
