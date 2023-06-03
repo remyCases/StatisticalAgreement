@@ -301,7 +301,7 @@ class agreement_index:
         Raises
         ------
         ValueError
-            If wrong method is given.
+            If wrong method is given or if less than 4 data are given.
 
         Examples
         --------
@@ -310,6 +310,9 @@ class agreement_index:
         >>> sa.ccc(X, Y, method='approx', alpha=0.05, allowance=0.10)
         Estimator(estimate=0.5714285714285715, limit=-0.4247655971444191, allowance=0.99)
         '''
+
+        if len(x) <= 3 or len(y) <= 3:
+            raise ValueError("Not enough data to compute indices,need at least four elements on each array_like input.")
         
         if self._name == Indices.ccc:
             if method == "approx":
@@ -325,6 +328,7 @@ class agreement_index:
                 index = _ccc_ustat(x, y, alpha, allowance)
             else:
                 raise ValueError("Wrong method called for ccc computation, current possible methods are approx or ustat.")
+        
         elif self._name == Indices.cp:
             msd = _msd(x, y, alpha)
             if method == "approx":
@@ -333,12 +337,14 @@ class agreement_index:
                 index = _cp_exact(x, y, alpha, criterion, allowance)
             else:
                 raise ValueError("Wrong method called for cp computation, current possible methods are approx or exact.")
+        
         elif self._name == Indices.tdi:
             if method == "approx":
                 msd = _msd(x, y, alpha)
                 index = _tdi_approx(msd, criterion, allowance)
             else:
                 raise ValueError("Wrong method called for tdi computation, current possible methods are approx.")
+        
         return index.as_estimator()
 
 ccc = agreement_index(name=Indices.ccc)
