@@ -104,10 +104,10 @@ def _ccc_lin(x, y,
     nu_sq_hat = mu_d**2 / sqr_var
 
     ccc_hat = rho_hat * accuracy.estimate
-    var_ccc_hat = 1 / (n - 2) * ((1-rho_hat**2)*ccc_hat**2/rho_hat**2
-                                 + 2*ccc_hat**3*(1-ccc_hat)*nu_sq_hat / (rho_hat*(1-ccc_hat**2))
-                                 - ccc_hat**4 * nu_sq_hat**2 / (2*rho_hat**2*(1-ccc_hat**2)))
-    var_z_hat = var_ccc_hat / (1-ccc_hat**2)
+    var_ccc_hat = 1 / (n - 2) * ((1-rho_hat**2)*ccc_hat**2*(1-ccc_hat**2)/rho_hat**2
+                                 + 2*ccc_hat**3*(1-ccc_hat)*nu_sq_hat / rho_hat
+                                 - ccc_hat**4 * nu_sq_hat**2 / (2*rho_hat**2))
+    var_z_hat = var_ccc_hat / (1-ccc_hat**2)**2
 
     ccc = TransformedEstimator(
         estimate=ccc_hat, 

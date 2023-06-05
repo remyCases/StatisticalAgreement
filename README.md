@@ -36,11 +36,11 @@ For each index listed in the following table:
 | CP |:heavy_check_mark:|WIP|:heavy_check_mark:|:x:|:x:|:x:
 | Accuracy |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:
 | Precision |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:
-| CCC |:heavy_check_mark:|WIP|WIP|:x:|:x:|:x:
+| CCC |:heavy_check_mark:|:heavy_check_mark:[^1]|WIP|:x:|:x:|:x:
 | Kappa |:x:|:x:|:x:|:x:|:x:|:x:
 | Weighted Kappa |:x:|:x:|:x:|:x:|:x:|:x:
 
-
+[^1]: With normal data only
 ### Test result
 
 Implementation of the indices are tested with a monte-carlo simulation. The goal is to match results from the scientific literature. Currently tests of mc simulation can be display running `main.py` with the `-s` argument.

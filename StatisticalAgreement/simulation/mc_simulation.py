@@ -47,8 +47,12 @@ EXPECTED_ZCCC = {
     '3': 0.377,
 }
 
-def mc_simulation(name_of_index: str, str_criterion: str):
-    criterion = float(str_criterion)
+def mc_simulation(name_of_index: str, str_criterion=""):
+    try:
+        criterion = float(str_criterion)
+    except ValueError:
+        criterion = 0
+        
     data_possibilities = [10, 20, 50]
     models_possibilities = ['1', '2', '3']
 

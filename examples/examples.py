@@ -5,6 +5,10 @@ def main():
     X = np.array([12, 10, 13, 10])
     Y = np.array([11, 12, 16, 9])
 
+    # Return approximate estimate of MSD 
+    # with a alpha risk of 5% 
+    print(f"Approximate estimate of MSD: {sa.msd(X, Y, method='approx', alpha=0.05)}\n")
+
     # Return approximate estimate of CCC 
     # with a alpha risk of 5% 
     # and an allowance of whithin sample deviation of 10%.

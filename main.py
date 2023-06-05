@@ -9,7 +9,7 @@ from examples import examples
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--example", "-e", required=False, action='store_true')
-    parser.add_argument("--simulation","-s", required=False, nargs=2)
+    parser.add_argument("--simulation","-s", required=False, nargs='*')
 
     args = parser.parse_args()
 
