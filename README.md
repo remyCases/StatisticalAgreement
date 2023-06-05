@@ -43,7 +43,9 @@ For each index listed in the following table:
 [^1]: With normal data only
 ### Test result
 
-Implementation of the indices are tested with a monte-carlo simulation. The goal is to match results from the scientific literature. Currently tests of mc simulation can be display running `main.py` with the `-s` argument.
+Implementation of the indices are tested with a monte-carlo simulation. The goal is to match results from the scientific literature. Currently tests of mc simulation can be display running `main.py` with the `-s xxx` argument where `xxx` is the index simulated.
+
+Currently only `msd` and `ccc` tests are implemented.
 
 ### Bibliography
 
