@@ -12,6 +12,7 @@ class Indices(Enum):
     ccc = 0
     cp = 1
     tdi = 2
+    msd = 3
 
 class FlagData(Enum):
     Data_Ok = 0

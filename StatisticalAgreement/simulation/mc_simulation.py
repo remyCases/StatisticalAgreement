@@ -47,12 +47,15 @@ EXPECTED_ZCCC = {
     '3': 0.377,
 }
 
-def ccc_simulation():
+def mc_simulation(name_of_index: str, str_criterion: str):
+    criterion = float(str_criterion)
     data_possibilities = [10, 20, 50]
     models_possibilities = ['1', '2', '3']
 
-    tuples_row = tuple(product(models_possibilities, ['real_ccc', 'ccc', 's_ccc',
-                                                      'real_z', 'z', 's_z']))
+    tuples_row = tuple(product(models_possibilities, [f'{name_of_index}', 
+                                                      f's_{name_of_index}',
+                                                      f'transformed_{name_of_index}', 
+                                                      f's_transformed_{name_of_index}']))
     multi_index = pd.MultiIndex.from_tuples(tuples_row, names=('case', 'estimator'))
     
     tuples_col = tuple(product(data_possibilities, ['mean', 'std', 'pvalue']))
@@ -62,26 +65,33 @@ def ccc_simulation():
    
     for m in models_possibilities:
         for d in data_possibilities:
-            ccc_simulation_from_model_and_ndata(n_iteration=5000, n_data=d, model=m, result_df=result_df)
+            _simulation_from_model_and_ndata(n_iteration=5000, n_data=d, model=m, result_df=result_df, 
+                                             name_of_index=name_of_index, criterion=criterion)
             
-    print("CCC with normal data:")
+    print(f"{name_of_index} with normal data:")
     print(result_df, '\n')
 
-def ccc_simulation_from_model_and_ndata(n_iteration: int, n_data: int, model: str, result_df):
+def _simulation_from_model_and_ndata(n_iteration: int, n_data: int, model: str, result_df, name_of_index: str, criterion: float):
     mean, cov = MODELS[model]
     array_index = np.empty(n_iteration)
     array_index_std = np.empty(n_iteration)
     array_transformed_index = np.empty(n_iteration)
     array_transformed_index_std = np.empty(n_iteration)
+    index_func = getattr(sa, name_of_index)
 
     for i in range(n_iteration):
         multidim = multivariate_normal.rvs(mean=mean, cov=cov, size=n_data)
-        index = sa.ccc(multidim[:, 0], multidim[:, 1], method='approx', alpha=0.05, transformed=True)
+        index = index_func(multidim[:, 0], multidim[:, 1], method='approx', alpha=0.05, transformed=True, criterion=criterion)
 
         array_index[i] = index.estimate
-        array_index_std[i] = np.sqrt(index.variance)
         array_transformed_index[i] = index.transformed_estimate
-        array_transformed_index_std[i] = np.sqrt(index.transformed_variance)
+
+        try:
+            array_index_std[i] = np.sqrt(index.variance)
+            array_transformed_index_std[i] = np.sqrt(index.transformed_variance)
+        except TypeError:
+            array_index_std[i] =  0
+            array_transformed_index_std[i] = 0
 
     mc = MonteCarlo()
     mc_index = mc.compute(array_index)
@@ -89,16 +99,14 @@ def ccc_simulation_from_model_and_ndata(n_iteration: int, n_data: int, model: st
     mc_transformed_index = mc.compute(array_transformed_index)
     mc_transformed_index_std = mc.compute(array_transformed_index_std)
     
-    result_df.loc[(model, 'real_ccc'), (n_data, 'mean')] = EXPECTED_CCC[model]
-    result_df.loc[(model, 'ccc'), (n_data, 'mean')] = mc_index.mean
-    result_df.loc[(model, 'real_z'), (n_data, 'mean')] = EXPECTED_ZCCC[model]
-    result_df.loc[(model, 'z'), (n_data, 'mean')] = mc_transformed_index.mean
+    result_df.loc[(model, name_of_index), (n_data, 'mean')] = mc_index.mean
+    result_df.loc[(model, f'transformed_{name_of_index}'), (n_data, 'mean')] = mc_transformed_index.mean
 
-    result_df.loc[(model, 's_ccc'), (n_data, 'mean')] = mc_index_std.mean
-    result_df.loc[(model, 's_z'), (n_data, 'mean')] = mc_transformed_index_std.mean
+    result_df.loc[(model, f's_{name_of_index}'), (n_data, 'mean')] = mc_index_std.mean
+    result_df.loc[(model, f's_transformed_{name_of_index}'), (n_data, 'mean')] = mc_transformed_index_std.mean
 
-    result_df.loc[(model, 'ccc'), (n_data, 'std')] = np.sqrt(mc_index.var)
-    result_df.loc[(model, 'z'), (n_data, 'std')] = np.sqrt(mc_transformed_index.var)
+    result_df.loc[(model, f'{name_of_index}'), (n_data, 'std')] = np.sqrt(mc_index.var)
+    result_df.loc[(model, f'transformed_{name_of_index}'), (n_data, 'std')] =  np.sqrt(mc_transformed_index.var)
 
-    result_df.loc[(model, 'ccc'), (n_data, 'pvalue')] = shapiro(array_index).pvalue
-    result_df.loc[(model, 'z'), (n_data, 'pvalue')] = shapiro(array_transformed_index).pvalue
+    result_df.loc[(model, f'{name_of_index}'), (n_data, 'pvalue')] = shapiro(array_index).pvalue
+    result_df.loc[(model, f'transformed_{name_of_index}'), (n_data, 'pvalue')] = shapiro(array_transformed_index).pvalue

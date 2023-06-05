@@ -9,12 +9,12 @@ from examples import examples
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--example", "-e", required=False, action='store_true')
-    parser.add_argument("--simulation","-s", required=False, action='store_true')
+    parser.add_argument("--simulation","-s", required=False, nargs=2)
 
     args = parser.parse_args()
 
     if args.simulation:
-        sa.ccc_simulation()
+        sa.mc_simulation(*args.simulation)
 
     if args.example:
         examples.main()

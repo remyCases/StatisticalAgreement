@@ -352,6 +352,12 @@ class agreement_index:
                 index = _tdi_approx(msd, criterion, allowance)
             else:
                 raise ValueError("Wrong method called for tdi computation, current possible methods are approx.")
+            
+        elif self._name == Indices.msd:
+            if method == "approx":
+                index = _msd(x, y, alpha)
+            else:
+                raise ValueError("Wrong method called for msd computation, current possible methods are approx.")
         
         if transformed:
             return index
@@ -361,6 +367,7 @@ class agreement_index:
 ccc = agreement_index(name=Indices.ccc)
 cp = agreement_index(name=Indices.cp)
 tdi = agreement_index(name=Indices.tdi)
+msd = agreement_index(name=Indices.msd)
 
 def agreement(x, y, delta_criterion, pi_criterion, alpha=DEFAULT_ALPHA,
               allowance_whitin_sample_deviation=WITHIN_SAMPLE_DEVIATION,

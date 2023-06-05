@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from scipy.stats import norm
-from ..simulation.monte_carlo import MonteCarlo, McCi
+from StatisticalAgreement.simulation.monte_carlo import MonteCarlo, McCi
 
 N_REPETITION = 5000
 
@@ -13,9 +13,7 @@ class TestMonteCarlo(unittest.TestCase):
         expected_result = McCi(
             mean=1.0,
             var=0.0,
-            lower=1.0,
-            upper=1.0
-            )
+            standard_error=0.0)
         
         self.assertEqual(mc.compute(np.repeat(1.0, N_REPETITION)), 
                          expected_result)
@@ -25,9 +23,7 @@ class TestMonteCarlo(unittest.TestCase):
         expected_result = McCi(
             mean=0.0,
             var=1.0,
-            lower=-1.96,
-            upper=1.96
-            )
+            standard_error=1/np.sqrt(N_REPETITION))
         
         array = norm.rvs(loc=0.0, scale=1.0, size=N_REPETITION)
         self.assertEqual(mc.compute(array), 
