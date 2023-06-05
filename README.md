@@ -31,7 +31,7 @@ For each index listed in the following table:
 
 |Index | Naive | Tested | Robust |  Tested | Bootstrap | Unified model | 
 |--|:--:|:--:|:--:|:--:|:--:|:--:|
-| MSD |:heavy_check_mark:|WIP|:heavy_check_mark:|:x:|:x:|:x:
+| MSD |:heavy_check_mark:|:heavy_check_mark:[^1]|:heavy_check_mark:|:x:|:x:|:x:
 | TDI |:heavy_check_mark:|WIP|:x:|:x:|:x:|:x:
 | CP |:heavy_check_mark:|WIP|:heavy_check_mark:|:x:|:x:|:x:
 | Accuracy |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:

@@ -35,24 +35,18 @@ MODELS = {
     '3': Models(mean=np.array([-np.sqrt(0.25)/2, np.sqrt(0.25)/2]), 
                 cov=np.array([[(4/3)**2, 0.5*4/3*2/3], [0.5*4/3*2/3, (2/3)**2]]))}
 
-EXPECTED_CCC = {
-    '1': 0.95,
-    '2': 0.887,
-    '3': 0.360
-}
-
-EXPECTED_ZCCC = {
-    '1': 1.832,
-    '2': 1.408,
-    '3': 0.377,
-}
+EXPECTED_VALUES = pd.DataFrame(data={"ccc": [0.950, 0.887, 0.360],
+                                     "transformed_ccc": [1.832, 1.408, 0.377],
+                                     "msd": [0.100, 0.239, 0.1583],
+                                     "transformed_msd": [-2.303, -1.431, 0.640],},
+                               index=['1', '2', '3'])
 
 def mc_simulation(name_of_index: str, str_criterion=""):
     try:
         criterion = float(str_criterion)
     except ValueError:
         criterion = 0
-        
+
     data_possibilities = [10, 20, 50]
     models_possibilities = ['1', '2', '3']
 
@@ -66,12 +60,14 @@ def mc_simulation(name_of_index: str, str_criterion=""):
     multi_col = pd.MultiIndex.from_tuples(tuples_col, names=('n', ''))
 
     result_df = pd.DataFrame(index=multi_index, columns=multi_col)
-   
+    
     for m in models_possibilities:
         for d in data_possibilities:
             _simulation_from_model_and_ndata(n_iteration=5000, n_data=d, model=m, result_df=result_df, 
                                              name_of_index=name_of_index, criterion=criterion)
-            
+            result_df.loc[(m, f'{name_of_index}'), "true_value"] = EXPECTED_VALUES.loc[m, f'{name_of_index}']
+            result_df.loc[(m, f'transformed_{name_of_index}'), "true_value"] = EXPECTED_VALUES.loc[m, f'transformed_{name_of_index}']
+
     print(f"{name_of_index} with normal data:")
     print(result_df, '\n')
 

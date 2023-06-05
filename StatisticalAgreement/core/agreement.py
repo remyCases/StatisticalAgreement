@@ -176,11 +176,13 @@ def _msd(x, y, alpha: float) -> TransformedEstimator:
     mu_d = np.mean(D)
 
     eps_sq_hat = np.sum(D**2) / (n - 1)
-    var_esp_hat = 2 / (n - 2) * ( 1 - mu_d**4 / eps_sq_hat**2)
+    var_esp_hat = 2 / (n - 2) * ( eps_sq_hat**2 - mu_d**4 )
+    var_w_hat = var_esp_hat / eps_sq_hat**2
 
     msd = TransformedEstimator(
         estimate=eps_sq_hat, 
         variance=var_esp_hat, 
+        transformed_variance=var_w_hat,
         transformed_function=TransformFunc.Log,
         alpha=alpha, 
         confident_limit=ConfidentLimit.Upper, 
