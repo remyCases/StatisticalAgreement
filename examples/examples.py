@@ -1,5 +1,5 @@
 import numpy as np
-import src.StatisticalAgreement as sa
+import StatisticalAgreement as sa
 
 def main():
     X = np.array([12, 10, 13, 10])

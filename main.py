@@ -3,7 +3,7 @@
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatiscalAgreement.
 
 import argparse
-import src.StatisticalAgreement as sa
+import StatisticalAgreement as sa
 from examples import examples
 
 if __name__ == "__main__":

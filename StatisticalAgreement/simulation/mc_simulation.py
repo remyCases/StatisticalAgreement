@@ -8,7 +8,7 @@ from typing import NamedTuple
 import pandas as pd
 from itertools import product
 from scipy.stats import multivariate_normal, shapiro
-import src.StatisticalAgreement as sa
+import StatisticalAgreement as sa
 from .monte_carlo import MonteCarlo
 
 class Models(NamedTuple):
@@ -51,7 +51,8 @@ def ccc_simulation():
     data_possibilities = [10, 20, 50]
     models_possibilities = ['1', '2', '3']
 
-    tuples_row = tuple(product(models_possibilities, ['ccc', 's_ccc','z', 's_z']))
+    tuples_row = tuple(product(models_possibilities, ['real_ccc', 'ccc', 's_ccc',
+                                                      'real_z', 'z', 's_z']))
     multi_index = pd.MultiIndex.from_tuples(tuples_row, names=('case', 'estimator'))
     
     tuples_col = tuple(product(data_possibilities, ['mean', 'std', 'pvalue']))
@@ -88,8 +89,11 @@ def ccc_simulation_from_model_and_ndata(n_iteration: int, n_data: int, model: st
     mc_transformed_index = mc.compute(array_transformed_index)
     mc_transformed_index_std = mc.compute(array_transformed_index_std)
     
+    result_df.loc[(model, 'real_ccc'), (n_data, 'mean')] = EXPECTED_CCC[model]
     result_df.loc[(model, 'ccc'), (n_data, 'mean')] = mc_index.mean
+    result_df.loc[(model, 'real_z'), (n_data, 'mean')] = EXPECTED_ZCCC[model]
     result_df.loc[(model, 'z'), (n_data, 'mean')] = mc_transformed_index.mean
+
     result_df.loc[(model, 's_ccc'), (n_data, 'mean')] = mc_index_std.mean
     result_df.loc[(model, 's_z'), (n_data, 'mean')] = mc_transformed_index_std.mean
 
