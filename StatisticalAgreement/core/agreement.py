@@ -9,8 +9,10 @@
 import warnings
 import numpy as np
 import pandas as pd
-from scipy.stats import norm, chi2, shapiro
-from .classutils import Indices, FlagData, TransformFunc, ConfidentLimit, TransformedEstimator, Estimator
+from scipy.stats import shapiro
+from .classutils import Indices, FlagData, TransformedEstimator, Estimator
+from . import continuous_agreement
+from . import categorical_agreement
 
 DEFAULT_ALPHA = 0.05
 CP_DELTA = 0.5
@@ -19,299 +21,56 @@ CP_ALLOWANCE = 0.9
 TDI_ALLOWANCE = 10
 WITHIN_SAMPLE_DEVIATION = 0.15
 
-def rbs_allowance(cp_allowance: float) -> float:
-    if cp_allowance == 0.75:
-        return 1/2
-    if cp_allowance == 0.8:
-        return 8
-    if cp_allowance == 0.85:
-        return 2
-    if cp_allowance == 0.9:
-        return 1
-    if cp_allowance == 0.95:
-        return 1/2
-    return np.nan
-
-def cp_tdi_approximation(rbs: float, cp_allowance: float) -> bool:
-    if cp_allowance == 0.75 and rbs <= 1/2:
-        return True
-    if cp_allowance == 0.8 and rbs <= 8:
-        return True
-    if cp_allowance == 0.85 and rbs <= 2:
-        return True
-    if cp_allowance == 0.9 and rbs <= 1:
-        return True
-    if cp_allowance == 0.95 and rbs <= 1/2:
-        return True
-    return False
-
-def _precision(x, y, alpha: float) -> TransformedEstimator:
-    n = len(x)
-    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
-
-    sqr_var = np.sqrt(s_sq_hat_biased_x * s_sq_hat_biased_y)
-    rho_hat = s_hat_biased_xy / sqr_var
-
-    var_rho_hat = (1 - rho_hat**2/2)/(n-3)
-    rho = TransformedEstimator(
-        estimate=rho_hat, 
-        variance=var_rho_hat, 
-        transformed_function=TransformFunc.Z,
-        alpha=alpha, 
-        confident_limit=ConfidentLimit.Lower, 
-        n=n
-    )
-    return rho
-
-def _accuracy(x, y, precision: TransformedEstimator, alpha: float) -> TransformedEstimator:
-    n = len(x)
-    mu_d = np.mean(x - y)
-    rho_hat = precision.estimate
-
-    s_sq_hat_biased_x, _, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
-    sqr_var = np.sqrt(s_sq_hat_biased_x * s_sq_hat_biased_y)
-    nu_sq_hat = mu_d**2 / sqr_var
-    omega_hat = np.sqrt(s_sq_hat_biased_x / s_sq_hat_biased_y)
-
-    acc_hat = 2 * sqr_var / (s_sq_hat_biased_x + s_sq_hat_biased_y + mu_d**2)
-    var_acc_hat = (
-        acc_hat**2*nu_sq_hat*(omega_hat + 1/omega_hat - 2*rho_hat) +
-        0.5*acc_hat**2*(omega_hat**2+1/omega_hat**2+2*rho_hat**2) +
-        (1+rho_hat**2)*(acc_hat*nu_sq_hat-1)
-        ) / ((n-2)*(1-acc_hat)**2)
+def _ccc_methods(x, y, method: str, alpha: float, allowance: float) -> TransformedEstimator:
     
-    acc = TransformedEstimator(
-        estimate=acc_hat, 
-        variance=var_acc_hat, 
-        transformed_function=TransformFunc.Logit,
-        alpha=alpha, 
-        confident_limit=ConfidentLimit.Lower, 
-        n=n
-    )
-    return acc
+    if method == "approx":
+        # Lin LI. A concordance correlation coefficient to evaluate reproducibility. 
+        # Biometrics. 1989 Mar;45(1):255-68. PMID: 2720055.
+        rho = continuous_agreement.precision(x, y, alpha)
+        acc = continuous_agreement.accuracy(x, y, rho, alpha)
+        return continuous_agreement.ccc_lin(x, y, rho, acc, alpha, allowance)
+    elif method == "ustat":
+        # King TS, Chinchilli VM. 
+        # Robust estimators of the concordance correlation coefficient. 
+        # J Biopharm Stat. 2001;11(3):83-105. doi: 10.1081/BIP-100107651. PMID: 11725932.
+        return continuous_agreement.ccc_ustat(x, y, alpha, allowance)
+    else:
+        raise ValueError("Wrong method called for ccc computation, current possible methods are approx or ustat.")
+
+def _cp_methods(x, y, method: str, alpha: float, criterion: float, allowance: float) -> TransformedEstimator:
+    if method == "approx":
+        msd = continuous_agreement.msd_exact(x, y, alpha)
+        return continuous_agreement.cp_approx(x, y, msd, alpha, criterion, allowance)
+    elif method == "exact":
+        return continuous_agreement.cp_exact(x, y, alpha, criterion, allowance)
+    else:
+        raise ValueError("Wrong method called for cp computation, current possible methods are approx or exact.")
+
+def _tdi_methods(x, y, method: str, alpha: float, criterion: float, allowance: float) -> TransformedEstimator:
+    if method == "approx":
+        msd = continuous_agreement.msd_exact(x, y, alpha)
+        return continuous_agreement.tdi_approx(msd, criterion, allowance)
+    else:
+        raise ValueError("Wrong method called for tdi computation, current possible methods are approx.")
     
-def _ccc_lin(x, y, 
-             precision: TransformedEstimator, 
-             accuracy: TransformedEstimator, 
-             alpha: float, 
-             allowance_whitin_sample_deviation: float) -> TransformedEstimator:
-    n = len(x)
-    mu_d = np.mean(x - y)
-    rho_hat = precision.estimate
-
-    s_sq_hat_biased_x, _, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
-    sqr_var = np.sqrt(s_sq_hat_biased_x * s_sq_hat_biased_y)
-    nu_sq_hat = mu_d**2 / sqr_var
-
-    ccc_hat = rho_hat * accuracy.estimate
-    var_ccc_hat = 1 / (n - 2) * ((1-rho_hat**2)*ccc_hat**2*(1-ccc_hat**2)/rho_hat**2
-                                 + 2*ccc_hat**3*(1-ccc_hat)*nu_sq_hat / rho_hat
-                                 - ccc_hat**4 * nu_sq_hat**2 / (2*rho_hat**2))
-    var_z_hat = var_ccc_hat / (1-ccc_hat**2)**2
-
-    ccc = TransformedEstimator(
-        estimate=ccc_hat, 
-        variance=var_ccc_hat, 
-        transformed_variance=var_z_hat,
-        transformed_function=TransformFunc.Z,
-        allowance=1-allowance_whitin_sample_deviation**2,
-        alpha=alpha, 
-        confident_limit=ConfidentLimit.Lower, 
-        n=n
-    )
-    return ccc
-
-def _ccc_ustat(x, y, alpha: float, allowance_whitin_sample_deviation: float) -> TransformedEstimator:
-    n = len(x)
-    sx = np.sum(x)
-    sy = np.sum(y)
-    ssx = np.sum(x**2)
-    ssy = np.sum(y**2)
-
-    xy = x * y
-    sxy = np.sum(xy)
-
-    u1 = -4/n * sxy
-    u2 = 2/n * (ssx + ssy)
-    u3 = -4/(n*(n-1)) * (sx * sy - sxy)
-
-    h = (n-1) * (u3 - u1)
-    g = u1 + n*u2 + (n-1)*u3
-
-    psi1 = (n-2)*xy + sxy/n
-    psi2 = (n-2)*(x**2 - ssx / n + y**2 - ssy / n)
-    psi3 = x * sy + y * sx - sx * sy / n + 2*xy + sxy/n
-
-    v_u1 = 64*np.sum(psi1**2)/(n**2*(n-1)**2)
-    v_u2 = 4*np.sum(psi2**2)/(n**2*(n-1)**2)
-    v_u3 = 64*np.sum(psi3**2)/(n**2*(n-1)**2)
-    cov_u1_u2 = -16*np.sum(psi1*psi2)/(n**2*(n-1)**2)
-    cov_u1_u3 = 64*np.sum(psi1*psi3)/(n**2*(n-1)**2)   
-    cov_u2_u3 = -16*np.sum(psi2*psi3)/(n**2*(n-1)**2)
+def _msd_methods(x, y, method: str, alpha: float) -> TransformedEstimator:
+    if method == "approx":
+        return continuous_agreement.msd_exact(x, y, alpha)
+    else:
+        raise ValueError("Wrong method called for msd computation, current possible methods are approx.")
     
-    v_h = (n-1)**2 * (v_u3 + v_u1 - 2 * cov_u1_u3)
-    v_g = v_u1 + n**2*v_u2 + (n-1)**2*v_u3 + 2*n*cov_u1_u2 + 2*(n-1)*cov_u1_u3 + 2*n*(n-1)*cov_u2_u3
-    cov_h_g = (n-1)*(-(n-2)*cov_u1_u3 + n*cov_u2_u3 + (n-1)*v_u3 - v_u1 - n*cov_u1_u2)
-    
-    ccc_hat = h/g
-    var_ccc_hat = ccc_hat**2 * (v_h / h**2 - 2*cov_h_g / (h*g) + v_g / g**2)
-    var_z_hat = var_ccc_hat / (1 - ccc_hat**2)**2
-    
-    ccc = TransformedEstimator(
-        estimate=ccc_hat, 
-        variance=var_ccc_hat, 
-        transformed_variance=var_z_hat,
-        transformed_function=TransformFunc.Z,
-        allowance=1-allowance_whitin_sample_deviation**2,
-        robust=True,
-        alpha=alpha, 
-        confident_limit=ConfidentLimit.Lower, 
-        n=n
-    )
-    return ccc
-    
-def _msd(x, y, alpha: float) -> TransformedEstimator:
-    n = len(x)
-    D = x - y
-    mu_d = np.mean(D)
+def _kappa_methods(x, y, method: str, alpha: float) -> TransformedEstimator:
+    c = max(len(np.unique(x)), len(np.unique(y)))
+    if method == "cohen":
+        return categorical_agreement.cohen_kappa(x, y, c, alpha)
+    elif method == "ciccetti" or method == "abs":
+        return categorical_agreement.abs_kappa(x, y, c, alpha)
+    elif method == "fleiss" or method == "squared":
+        return categorical_agreement.squared_kappa(x, y, c, alpha)
+    else:
+        raise ValueError("Wrong method called for kappa computation, \
+                         current possible methods are cohen, abs or squared.")
 
-    eps_sq_hat = np.sum(D**2) / (n - 1)
-    var_esp_hat = 2 / (n - 2) * ( eps_sq_hat**2 - mu_d**4 )
-    var_w_hat = var_esp_hat / eps_sq_hat**2
-
-    msd = TransformedEstimator(
-        estimate=eps_sq_hat, 
-        variance=var_esp_hat, 
-        transformed_variance=var_w_hat,
-        transformed_function=TransformFunc.Log,
-        alpha=alpha, 
-        confident_limit=ConfidentLimit.Upper, 
-        n=n
-    )
-    return msd
-
-def _contingency(x, y, c: int):
-    matrix_contingency = np.zeros((c+1, c+1))
-    for _x, _y in zip(x, y):
-        matrix_contingency[_x][_y] += 1
-        matrix_contingency[_x][c] += 1
-        matrix_contingency[c][_y] += 1
-        matrix_contingency[c][c] += 1
-
-    return matrix_contingency
-
-def _cohen_kappa(x, y, c: int, alpha: float) -> TransformedEstimator:
-    mat = _contingency(x, y, c)
-    p0 = 0
-    pc = 0
-    factor = 0
-    n = mat[c][c]
-    for i in range(c):
-        p0 += mat[i][i]
-        pc += mat[i][c] * mat[c][i]
-        
-    frac0 = p0/n
-    fracc = pc/n**2
-    k_hat =  (frac0 - fracc) / (1 - fracc)
-    
-    for i in range(c):
-        factor += mat[i][i]/n*(1 - (mat[c][i] + mat[i][c])/n*(1-k_hat))**2
-        
-    var_k_hat = (factor - (k_hat - fracc*(1-k_hat))**2) / (n * (1-fracc)**2)
-
-    kappa = TransformedEstimator(
-        estimate=k_hat, 
-        variance=var_k_hat, 
-        transformed_variance=var_k_hat,
-        transformed_function=TransformFunc.Id,
-        alpha=alpha, 
-        confident_limit=ConfidentLimit.Lower, 
-        n=n
-    )
-    return kappa
-
-def _rbs(x, y, cp_allowance: float) -> TransformedEstimator:
-    n = len(x)
-    D = x - y
-    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
-    s_sq_hat_d = n / (n - 3) * (s_sq_hat_biased_x + s_sq_hat_biased_y - 2 * s_hat_biased_xy)
-    mu_d = np.mean(D)
-
-    rbs_hat = mu_d**2 / s_sq_hat_d
-    rbs = TransformedEstimator(
-        estimate=rbs_hat,
-        allowance=rbs_allowance(cp_allowance)
-    )
-    return rbs
-
-def _cp_approx(x, y, msd: TransformedEstimator, alpha: float, delta_criterion: float, cp_allowance: float) -> TransformedEstimator:
-    n = len(x)
-    D = x - y
-    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
-    s_sq_hat_d = n / (n - 3) * (s_sq_hat_biased_x + s_sq_hat_biased_y - 2 * s_hat_biased_xy)
-    mu_d = np.mean(D)
-
-    delta_plus = (delta_criterion + mu_d) / np.sqrt(s_sq_hat_d)
-    n_delta_plus = norm.pdf(-delta_plus)
-    delta_minus = (delta_criterion - mu_d) / np.sqrt(s_sq_hat_d)
-    n_delta_minus = norm.pdf(delta_minus)
-
-    cp_hat = chi2.cdf(delta_criterion**2 / msd.estimate, df=1)
-    var_cp_hat = 1/(n-3) * ((n_delta_plus - n_delta_minus)**2 + 0.5*(delta_minus*n_delta_minus + delta_plus*n_delta_plus))
-    var_transform_cp_hat = var_cp_hat / ((1-cp_hat)**2*cp_hat**2)
-    
-    cp = TransformedEstimator(
-        estimate=cp_hat, 
-        variance=var_cp_hat, 
-        transformed_variance=var_transform_cp_hat,
-        transformed_function=TransformFunc.Logit,
-        allowance=cp_allowance,
-        alpha=alpha, 
-        confident_limit=ConfidentLimit.Lower, 
-        n=n
-    )
-    return cp
-
-def _cp_exact(x, y, alpha: float, delta_criterion: float, cp_allowance: float) -> TransformedEstimator:
-    n = len(x)
-    D = x - y
-    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
-    s_sq_hat_d = n / (n - 3) * (s_sq_hat_biased_x + s_sq_hat_biased_y - 2 * s_hat_biased_xy)
-    mu_d = np.mean(D)
-
-    delta_plus = (delta_criterion + mu_d) / np.sqrt(s_sq_hat_d)
-    n_delta_plus = norm.pdf(-delta_plus)
-    delta_minus = (delta_criterion - mu_d) / np.sqrt(s_sq_hat_d)
-    n_delta_minus = norm.pdf(delta_minus)
-
-    cp_hat = norm.cdf(delta_minus) - norm.cdf(-delta_plus)
-    var_cp_hat = 1/(n-3) * ((n_delta_plus - n_delta_minus)**2 + 0.5*(delta_minus*n_delta_minus + delta_plus*n_delta_plus))
-    var_transform_cp_hat = var_cp_hat / ((1-cp_hat)**2*cp_hat**2)
-    
-    cp = TransformedEstimator(
-        estimate=cp_hat, 
-        variance=var_cp_hat, 
-        transformed_variance=var_transform_cp_hat,
-        transformed_function=TransformFunc.Logit,
-        allowance=cp_allowance,
-        robust=True,
-        alpha=alpha, 
-        confident_limit=ConfidentLimit.Lower, 
-        n=n
-    )
-    return cp
-
-def _tdi_approx(msd: TransformedEstimator, pi_criterion: float, tdi_allowance: float)  -> TransformedEstimator:
-    coeff_tdi = norm.ppf(1 - (1 - pi_criterion) / 2)
-    tdi = TransformedEstimator(
-        estimate=coeff_tdi * np.sqrt(msd.estimate), 
-        limit=coeff_tdi * np.sqrt(msd.limit),
-        allowance=tdi_allowance,
-        robust=False,
-        confident_limit=ConfidentLimit.Upper
-    )
-    return tdi
-    
 class agreement_index:
     def __init__(self, name: Indices):
         self._name = name
@@ -365,49 +124,20 @@ class agreement_index:
             raise ValueError("Not enough data to compute indices,need at least four elements on each array_like input.")
         
         if self._name == Indices.ccc:
-            if method == "approx":
-                # Lin LI. A concordance correlation coefficient to evaluate reproducibility. 
-                # Biometrics. 1989 Mar;45(1):255-68. PMID: 2720055.
-                rho = _precision(x, y, alpha)
-                acc = _accuracy(x, y, rho, alpha)
-                index = _ccc_lin(x, y, rho, acc, alpha, allowance)
-            elif method == "ustat":
-                # King TS, Chinchilli VM. 
-                # Robust estimators of the concordance correlation coefficient. 
-                # J Biopharm Stat. 2001;11(3):83-105. doi: 10.1081/BIP-100107651. PMID: 11725932.
-                index = _ccc_ustat(x, y, alpha, allowance)
-            else:
-                raise ValueError("Wrong method called for ccc computation, current possible methods are approx or ustat.")
-        
+            index = _ccc_methods(x, y, method, alpha, allowance)
+
         elif self._name == Indices.cp:
-            if method == "approx":
-                msd = _msd(x, y, alpha)
-                index = _cp_approx(x, y, msd, alpha, criterion, allowance)
-            elif method == "exact":
-                index = _cp_exact(x, y, alpha, criterion, allowance)
-            else:
-                raise ValueError("Wrong method called for cp computation, current possible methods are approx or exact.")
-        
+            index = _cp_methods(x, y, method, alpha, criterion, allowance)
+
         elif self._name == Indices.tdi:
-            if method == "approx":
-                msd = _msd(x, y, alpha)
-                index = _tdi_approx(msd, criterion, allowance)
-            else:
-                raise ValueError("Wrong method called for tdi computation, current possible methods are approx.")
-            
+            index = _tdi_methods(x, y, method, alpha, criterion, allowance)
+
         elif self._name == Indices.msd:
-            if method == "approx":
-                index = _msd(x, y, alpha)
-            else:
-                raise ValueError("Wrong method called for msd computation, current possible methods are approx.")
-            
-        elif self._name == Indices.cohen_kappa:
-            if method == "exact":
-                c = max(len(np.unique(x)), len(np.unique(y)))
-                index = _cohen_kappa(x, y, c, alpha)
-            else:
-                raise ValueError("Wrong method called for msd computation, current possible methods are exact.")
-        
+            index = _msd_methods(x, y, method, alpha)
+
+        elif self._name == Indices.kappa:
+            index = _kappa_methods(x, y, method, alpha)
+
         if transformed:
             return index
         else:
@@ -417,7 +147,7 @@ ccc = agreement_index(name=Indices.ccc)
 cp = agreement_index(name=Indices.cp)
 tdi = agreement_index(name=Indices.tdi)
 msd = agreement_index(name=Indices.msd)
-cohen_kappa = agreement_index(name=Indices.cohen_kappa)
+kappa = agreement_index(name=Indices.kappa)
 
 def agreement(x, y, delta_criterion, pi_criterion, alpha=DEFAULT_ALPHA,
               allowance_whitin_sample_deviation=WITHIN_SAMPLE_DEVIATION,
@@ -431,7 +161,7 @@ def agreement(x, y, delta_criterion, pi_criterion, alpha=DEFAULT_ALPHA,
     if log:
         if np.sum(x<=0) + np.sum(y<=0) > 0:
             flag = FlagData.Negative
-            raise ValueError("Input data are not positive for a log transformation")
+            raise ValueError("Input data can't be negative for a log transformation")
         else:
             x=np.log(x)
             y=np.log(y)
@@ -446,16 +176,16 @@ def agreement(x, y, delta_criterion, pi_criterion, alpha=DEFAULT_ALPHA,
         warnings.warn("Input values are constant, can't compute ccc-related indexes")
 
     if flag != FlagData.Constant:
-        rho = _precision(x, y, alpha)
-        acc = _accuracy(x, y, rho, alpha)
-        ccc_lin = _ccc_lin(x, y, rho, acc, alpha, allowance_whitin_sample_deviation)
-        ccc_ustat = _ccc_ustat(x, y, alpha, allowance_whitin_sample_deviation)
+        rho = continuous_agreement.precision(x, y, alpha)
+        acc = continuous_agreement.accuracy(x, y, rho, alpha)
+        ccc_lin = continuous_agreement.ccc_lin(x, y, rho, acc, alpha, allowance_whitin_sample_deviation)
+        ccc_ustat = continuous_agreement.ccc_ustat(x, y, alpha, allowance_whitin_sample_deviation)
 
-    msd = _msd(x, y, alpha)
-    rbs = _rbs(x, y, cp_allowance)
-    cp_approx = _cp_approx(x, y, msd, alpha, delta_criterion, cp_allowance)
-    cp = _cp_exact(x, y, alpha, delta_criterion, cp_allowance)
-    tdi = _tdi_approx(msd, pi_criterion, tdi_allowance)
+    msd = continuous_agreement.msd_exact(x, y, alpha)
+    rbs = continuous_agreement.rbs(x, y, cp_allowance)
+    cp_approx = continuous_agreement.cp_approx(x, y, msd, alpha, delta_criterion, cp_allowance)
+    cp = continuous_agreement.cp_exact(x, y, alpha, delta_criterion, cp_allowance)
+    tdi = continuous_agreement.tdi_approx(msd, pi_criterion, tdi_allowance)
 
     res.loc["acc", :] = acc.to_series()
     res.loc["rho", :] = rho.to_series()

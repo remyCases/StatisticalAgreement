@@ -17,7 +17,7 @@ This project is not a proper python package yet. It will be distributed in the f
 You can find examples in the example folder. Current functions are:
 ```python
 import StatisticalAgreement as sa
-sa.cohen_kappa(...)
+sa.kappa(...)
 sa.ccc(...)
 sa.cp(...)
 sa.tdi(...)
@@ -44,17 +44,19 @@ For each index listed in the following table:
 | Accuracy |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:
 | Precision |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:
 | CCC |:heavy_check_mark:|:heavy_check_mark:[^1]|WIP|:x:|:x:|:x:
-| Kappa |:x:|WIP|:x:|:x:|:x:|:x:
-| Weighted Kappa |:x:|:x:|:x:|:x:|:x:|:x:
+| Kappa |:heavy_check_mark:|:heavy_check_mark:[^3]|:x:|:x:|:x:|:x:
+| Weighted Kappa |:heavy_check_mark:[^2]|:heavy_check_mark:[^3]|:x:|:x:|:x:|:x:
 
 ## Test result
 
 Implementation of the indices are tested with a monte-carlo simulation. The goal is to match results from the scientific literature. Currently tests of mc simulation can be display running `main.py` with the `-s i` argument where `i` is the index simulated.
 
-Currently only `msd` and `ccc` tests are implemented. One can compare `msd` simulation results with \cite(LIN2000) and `ccc` one with \cite(LIN2000).
+Currently only `msd` and `ccc` tests are implemented. One can compare `msd` simulation results with \cite{LIN2000} and `ccc` one with \cite{LIN1989}.
 
 ## References
 
 Bibtex is available [here](bibliography.bib).
 
 [^1]: With normal data only
+[^2]: Absolute and Squared Weighted Kappa
+[^3]: Minimal testing based on examples found in \cite{LIN2013}
