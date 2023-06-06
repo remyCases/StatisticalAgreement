@@ -190,6 +190,46 @@ def _msd(x, y, alpha: float) -> TransformedEstimator:
     )
     return msd
 
+def _contingency(x, y, c):
+    matrix_contingency = np.zeros((c+1, c+1))
+    for _x, _y in zip(x, y):
+        matrix_contingency[_x][_y] += 1
+        matrix_contingency[_x][c] += 1
+        matrix_contingency[c][_y] += 1
+        matrix_contingency[c][c] += 1
+
+    return matrix_contingency
+
+def _cohen_kappa(x, y, c, alpha):
+    mat = _contingency(x, y, c)
+    p0 = 0
+    pc = 0
+    factor = 0
+    n = mat[c][c]
+    for i in range(c):
+        p0 += mat[i][i]
+        pc += mat[i][c] * mat[c][i]
+        
+    frac0 = p0/n
+    fracc = pc/n**2
+    k_hat =  (frac0 - fracc) / (1 - fracc)
+    
+    for i in range(c):
+        factor += mat[i][i]/n*(1 - (mat[c][i] + mat[i][c])/n*(1-k_hat))**2
+        
+    var_k_hat = (factor - (k_hat - fracc*(1-k_hat))**2) / (n * (1-fracc)**2)
+
+    kappa = TransformedEstimator(
+        estimate=k_hat, 
+        variance=var_k_hat, 
+        transformed_variance=var_k_hat,
+        transformed_function=TransformFunc.Id,
+        alpha=alpha, 
+        confident_limit=ConfidentLimit.Lower, 
+        n=n
+    )
+    return kappa
+
 def _rbs(x, y, cp_allowance: float) -> TransformedEstimator:
     n = len(x)
     D = x - y

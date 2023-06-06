@@ -9,6 +9,7 @@ from examples import examples
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--example", "-e", required=False, action='store_true')
+    parser.add_argument("--test", "-t", required=False, action='store_true')
     parser.add_argument("--simulation","-s", required=False, nargs='*')
 
     args = parser.parse_args()
@@ -18,3 +19,11 @@ if __name__ == "__main__":
 
     if args.example:
         examples.main()
+
+    if args.test:
+        from StatisticalAgreement.core.agreement import _contingency, _cohen_kappa
+        import numpy as np
+        X = np.repeat([0, 0, 0, 1, 1, 1, 2, 2, 2], [11, 2, 19, 1, 3, 3, 0, 8, 82])
+        Y = np.repeat([0, 1, 2, 0, 1, 2, 0, 1, 2], [11, 2, 19, 1, 3, 3, 0, 8, 82])
+        print(_contingency(X, Y, 3))
+        print(_cohen_kappa(X, Y, 3, 0.05))
