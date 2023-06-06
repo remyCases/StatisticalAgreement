@@ -2,6 +2,11 @@ import numpy as np
 import StatisticalAgreement as sa
 
 def main():
+    x_cat = np.repeat([0, 0, 0, 1, 1, 1, 2, 2, 2], [11, 2, 19, 1, 3, 3, 0, 8, 82])
+    y_cat = np.repeat([0, 1, 2, 0, 1, 2, 0, 1, 2], [11, 2, 19, 1, 3, 3, 0, 8, 82])
+    print(f"Estimate of Cohen's Kappa: {sa.cohen_kappa(x_cat, y_cat, method='exact', alpha=0.05)}")
+    print(f"Of following contingency Matrix: \n{sa.core.agreement._contingency(x_cat, y_cat, 3)}\n")
+
     X = np.array([12, 10, 13, 10])
     Y = np.array([11, 12, 16, 9])
 

@@ -13,6 +13,7 @@ class Indices(Enum):
     cp = 1
     tdi = 2
     msd = 3
+    cohen_kappa = 4
 
 class FlagData(Enum):
     Data_Ok = 0

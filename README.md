@@ -17,6 +17,7 @@ This project is not a proper python package yet. It will be distributed in the f
 You can find examples in the example folder. Current functions are:
 ```python
 import StatisticalAgreement as sa
+sa.cohen_kappa(...)
 sa.ccc(...)
 sa.cp(...)
 sa.tdi(...)
@@ -43,7 +44,7 @@ For each index listed in the following table:
 | Accuracy |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:
 | Precision |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:
 | CCC |:heavy_check_mark:|:heavy_check_mark:[^1]|WIP|:x:|:x:|:x:
-| Kappa |WIP|WIP|:x:|:x:|:x:|:x:
+| Kappa |:x:|WIP|:x:|:x:|:x:|:x:
 | Weighted Kappa |:x:|:x:|:x:|:x:|:x:|:x:
 
 ## Test result

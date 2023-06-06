@@ -190,7 +190,7 @@ def _msd(x, y, alpha: float) -> TransformedEstimator:
     )
     return msd
 
-def _contingency(x, y, c):
+def _contingency(x, y, c: int):
     matrix_contingency = np.zeros((c+1, c+1))
     for _x, _y in zip(x, y):
         matrix_contingency[_x][_y] += 1
@@ -200,7 +200,7 @@ def _contingency(x, y, c):
 
     return matrix_contingency
 
-def _cohen_kappa(x, y, c, alpha):
+def _cohen_kappa(x, y, c: int, alpha: float) -> TransformedEstimator:
     mat = _contingency(x, y, c)
     p0 = 0
     pc = 0
@@ -380,8 +380,8 @@ class agreement_index:
                 raise ValueError("Wrong method called for ccc computation, current possible methods are approx or ustat.")
         
         elif self._name == Indices.cp:
-            msd = _msd(x, y, alpha)
             if method == "approx":
+                msd = _msd(x, y, alpha)
                 index = _cp_approx(x, y, msd, alpha, criterion, allowance)
             elif method == "exact":
                 index = _cp_exact(x, y, alpha, criterion, allowance)
@@ -400,6 +400,13 @@ class agreement_index:
                 index = _msd(x, y, alpha)
             else:
                 raise ValueError("Wrong method called for msd computation, current possible methods are approx.")
+            
+        elif self._name == Indices.cohen_kappa:
+            if method == "exact":
+                c = max(len(np.unique(x)), len(np.unique(y)))
+                index = _cohen_kappa(x, y, c, alpha)
+            else:
+                raise ValueError("Wrong method called for msd computation, current possible methods are exact.")
         
         if transformed:
             return index
@@ -410,6 +417,7 @@ ccc = agreement_index(name=Indices.ccc)
 cp = agreement_index(name=Indices.cp)
 tdi = agreement_index(name=Indices.tdi)
 msd = agreement_index(name=Indices.msd)
+cohen_kappa = agreement_index(name=Indices.cohen_kappa)
 
 def agreement(x, y, delta_criterion, pi_criterion, alpha=DEFAULT_ALPHA,
               allowance_whitin_sample_deviation=WITHIN_SAMPLE_DEVIATION,
