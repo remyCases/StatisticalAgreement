@@ -14,16 +14,44 @@ Currently, only implementations for basic continuous or categorical models are p
 This project is not a proper python package yet. It will be distributed in the future via Pypi. Thus, to use it, you need to clone the current repo and include in your project.
 
 
-You can find examples in the example folder. Current functions are:
+You can find examples in the example folder.
+
+Here is an example of CCC usage with Gaussian simulated data:
 ```python
+import numpy as np
+from scipy. stats import multivariate_normal
 import StatisticalAgreement as sa
-sa.kappa(...)
-sa.ccc(...)
-sa.cp(...)
-sa.tdi(...)
-sa.msd(...)
-sa.agreement(...)
+
+import seaborn as sns    
+import matplotlib.pyplot as plt
+
+mean=np.array([-np.sqrt(0.1)/2, np.sqrt(0.1)/2])
+cov=np.array([[1.1**2, 0.95*1.1*0.9], [0.95*1.1*0.9, 0.9**2]])
+xy = multivariate_normal.rvs(mean=mean, cov=cov, size=100)
+
+X = xy[:, 0]
+Y = xy[:, 1]
+
+ax = sns.histplot(X - Y)
+ax.set(xlabel='Difference of methods')
+plt.show()
+
+# Return approximate estimate of CCC 
+# with a alpha risk of 5% 
+# and an allowance of whithin sample deviation of 10%.
+ccc = sa.ccc(X, Y, method='approx', alpha=0.05, allowance=0.10)
+print(f"Approximate estimate of CCC: {ccc.estimate:.4f}\n\
+Lower confident interval of the estimate with confident level of 95%: {ccc.limit:.4f}\n")
 ```
+```
+Approximate estimate of CCC: 0.8943
+Lower confident interval of the estimate with confident level of 95%: 0.8625
+```
+
+Since `allowance > limit`, then there is no allowance by criterion defined by the user.
+
+The distribution of the difference of methods can be displayed for visual analysis.
+![Distribution of difference of methods](plots/histplot_difference_methods_simalution_example.png?raw=true "Distribution of difference of methods")
 
 Running the `main.py` with the argument `-e` will display the examples.
 
@@ -38,9 +66,9 @@ For each index listed in the following table:
 
 |Index | Naive | Tested | Robust |  Tested | Bootstrap | Unified model | 
 |--|:--:|:--:|:--:|:--:|:--:|:--:|
-| MSD |:heavy_check_mark:|:heavy_check_mark:[^1]|:heavy_check_mark:|:x:|:x:|:x:
+| MSD |:heavy_check_mark:|:heavy_check_mark:[^1]|:x:|:x:|:x:|:x:
 | TDI |:heavy_check_mark:|WIP|:x:|:x:|:x:|:x:
-| CP |:heavy_check_mark:|WIP|:heavy_check_mark:|:x:|:x:|:x:
+| CP |:heavy_check_mark:|WIP|:x:|:x:|:x:|:x:
 | Accuracy |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:
 | Precision |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:
 | CCC |:heavy_check_mark:|:heavy_check_mark:[^1]|WIP|:x:|:x:|:x:
