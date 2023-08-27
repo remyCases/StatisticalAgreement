@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "StatisticalAgreement"
-version = "0.0.1"
+version = "0.3.0"
 authors = [
   { name="Cases Rémy", email="remy.cases@gmail.com" },
 ]
-description = "Implementation of CCC, TDI and CP from Lawrence Lin works about Statistical Agreement "
+description = "Implementation of CCC, TDI and CP for Statistical Agreement"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
@@ -18,5 +18,5 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/remyCases/StatiscalAgreement"
-"Bug Tracker" = "https://github.com/remyCases/StatiscalAgreement/issues"
+"Homepage" = "https://github.com/remyCases/StatisticalAgreement"
+"Bug Tracker" = "https://github.com/remyCases/StatisticalAgreement/issues"

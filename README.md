@@ -88,3 +88,11 @@ Bibtex is available [here](bibliography.bib).
 [^1]: With normal data only
 [^2]: Absolute and Squared Weighted Kappa
 [^3]: Minimal testing based on examples found in \cite{LIN2013}
+
+## Troubleshooting
+
+For VS Code users on Windows, using a venv to run the script can be prohibited due to ExecutionPolicy. 
+```powershell
+Get-ExecutionPolicy -List
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
+```
