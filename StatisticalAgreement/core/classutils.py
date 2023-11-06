@@ -27,24 +27,26 @@ class TransformFunc(Enum):
     Logit = 3
 
     def apply(self, x: float) -> float:
-        if self == TransformFunc.Id:
-            return x
-        if self == TransformFunc.Log:
-            return np.log(x)
-        if self == TransformFunc.Z:
-            return np.log((1+x)/(1-x)) * 0.5
-        if self == TransformFunc.Logit:
-            return np.log(x/(1-x))
+        match self:
+            case TransformFunc.Id:
+                return x
+            case TransformFunc.Log:
+                return np.log(x)
+            case TransformFunc.Z:
+                return np.log((1.0 + x)/(1.0 - x)) * 0.5
+            case TransformFunc.Logit:
+                return np.log(x / (1.0 - x))
         
     def apply_inv(self, x: float) -> float:
-        if self == TransformFunc.Id:
-            return x
-        if self == TransformFunc.Log:
-            return np.exp(x)
-        if self == TransformFunc.Z:
-            return (np.exp(2*x) - 1) / (np.exp(2*x) + 1)
-        if self == TransformFunc.Logit:
-            return np.exp(x)/(np.exp(x) + 1)
+        match self:
+            case TransformFunc.Id:
+                return x
+            case TransformFunc.Log:
+                return np.exp(x)
+            case TransformFunc.Z:
+                return (np.exp(2.0 * x) - 1.0) / (np.exp(2.0 * x) + 1.0)
+            case TransformFunc.Logit:
+                return np.exp(x)/(np.exp(x) + 1.0)
         
 class ConfidentLimit(Enum):
     Lower = 0

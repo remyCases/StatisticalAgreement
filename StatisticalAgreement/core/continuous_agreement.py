@@ -5,6 +5,7 @@
 import numpy as np
 from scipy.stats import norm, chi2
 from .classutils import TransformFunc, ConfidentLimit, TransformedEstimator
+from .mathutils import almost_equal_float
 
 def precision(x, y, alpha: float) -> TransformedEstimator:
     n = len(x)
@@ -152,16 +153,16 @@ def msd_exact(x, y, alpha: float) -> TransformedEstimator:
     return msd
 
 def _rbs_allowance(cp_allowance: float) -> float:
-    if cp_allowance == 0.75:
-        return 1/2
-    if cp_allowance == 0.8:
-        return 8
-    if cp_allowance == 0.85:
-        return 2
-    if cp_allowance == 0.9:
-        return 1
-    if cp_allowance == 0.95:
-        return 1/2
+    if almost_equal_float(cp_allowance, 0.75):
+        return .5
+    if almost_equal_float(cp_allowance, 0.8):
+        return 8.0
+    if almost_equal_float(cp_allowance, 0.85):
+        return 2.0
+    if almost_equal_float(cp_allowance, 0.9):
+        return 1.0
+    if almost_equal_float(cp_allowance, 0.95):
+        return .5
     return np.nan
 
 def rbs(x, y, cp_allowance: float) -> TransformedEstimator:
