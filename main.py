@@ -8,7 +8,8 @@ from examples import examples
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--example", "-e", required=False, action='store_true')
+    parser.add_argument("--exampleCat", "-et", required=False, action='store_true')
+    parser.add_argument("--exampleCon", "-en", required=False, action='store_true')
     parser.add_argument("--test", "-t", required=False, action='store_true')
     parser.add_argument("--simulation","-s", required=False, nargs='*')
 
@@ -17,5 +18,8 @@ if __name__ == "__main__":
     if args.simulation:
         sa.mc_simulation(*args.simulation)
 
-    if args.example:
-        examples.main()
+    if args.exampleCat:
+        examples.main(categorical=True)
+
+    if args.exampleCon:
+        examples.main(continuous=True)

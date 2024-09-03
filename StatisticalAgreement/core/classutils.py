@@ -3,54 +3,54 @@
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
 from enum import Enum
+from dataclasses import dataclass, field, InitVar
+from scipy.stats import norm, t
 import numpy as np
 import pandas as pd
-from scipy.stats import norm, t
-from dataclasses import dataclass, field, InitVar
 
 class Indices(Enum):
-    ccc = 0
-    cp = 1
-    tdi = 2
-    msd = 3
-    kappa = 4
+    CCC = 0
+    CP = 1
+    TDI = 2
+    MSD = 3
+    KAPPA = 4
 
 class FlagData(Enum):
-    Data_Ok = 0
-    Constant = 1
-    Negative = 2
+    OK = 0
+    CONSTANT = 1
+    NEGATIVE = 2
 
 class TransformFunc(Enum):
-    Id = 0
-    Log = 1
+    ID = 0
+    LOG = 1
     Z = 2
-    Logit = 3
+    LOGIT = 3
 
     def apply(self, x: float) -> float:
         match self:
-            case TransformFunc.Id:
+            case TransformFunc.ID:
                 return x
-            case TransformFunc.Log:
+            case TransformFunc.LOG:
                 return np.log(x)
             case TransformFunc.Z:
                 return np.log((1.0 + x)/(1.0 - x)) * 0.5
-            case TransformFunc.Logit:
+            case TransformFunc.LOGIT:
                 return np.log(x / (1.0 - x))
-        
+
     def apply_inv(self, x: float) -> float:
         match self:
-            case TransformFunc.Id:
+            case TransformFunc.ID:
                 return x
-            case TransformFunc.Log:
+            case TransformFunc.LOG:
                 return np.exp(x)
             case TransformFunc.Z:
                 return (np.exp(2.0 * x) - 1.0) / (np.exp(2.0 * x) + 1.0)
-            case TransformFunc.Logit:
+            case TransformFunc.LOGIT:
                 return np.exp(x)/(np.exp(x) + 1.0)
-        
+
 class ConfidentLimit(Enum):
-    Lower = 0
-    Upper = 1
+    LOWER = 0
+    UPPER = 1
 
 @dataclass
 class Estimator:
@@ -64,7 +64,7 @@ class Estimator:
             "limit": self.limit,
             "allowance": self.allowance,
             })
-    
+
 @dataclass
 class TransformedEstimator:
     estimate: float
@@ -90,9 +90,9 @@ class TransformedEstimator:
             if self.transformed_variance is None:
                 self.transformed_variance = self.variance
 
-            if confident_limit == ConfidentLimit.Upper:
+            if confident_limit == ConfidentLimit.UPPER:
                 transformed_limit = self.transformed_estimate + coeff * np.sqrt(self.transformed_variance)
-            if confident_limit == ConfidentLimit.Lower:
+            if confident_limit == ConfidentLimit.LOWER:
                 transformed_limit = self.transformed_estimate - coeff * np.sqrt(self.transformed_variance)
 
             self.limit = self.transformed_function.apply_inv(transformed_limit)
@@ -110,6 +110,6 @@ class TransformedEstimator:
             "allowance": self.allowance,
             "robust": self.robust,
             })
-    
+
     def as_estimator(self) -> Estimator:
         return Estimator(estimate=self.estimate, limit=self.limit, allowance=self.allowance)

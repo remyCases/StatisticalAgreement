@@ -13,13 +13,12 @@ Currently, only implementations for basic continuous or categorical models are p
 
 This project is not a proper python package yet. It will be distributed in the future via Pypi. Thus, to use it, you need to clone the current repo and include in your project.
 
-
 You can find examples in the example folder.
 
 Here is an example of CCC usage with Gaussian simulated data:
 ```python
-import numpy as np
 from scipy. stats import multivariate_normal
+import numpy as np
 import StatisticalAgreement as sa
 
 import seaborn as sns    
@@ -29,17 +28,17 @@ mean=np.array([-np.sqrt(0.1)/2, np.sqrt(0.1)/2])
 cov=np.array([[1.1**2, 0.95*1.1*0.9], [0.95*1.1*0.9, 0.9**2]])
 xy = multivariate_normal.rvs(mean=mean, cov=cov, size=100)
 
-X = xy[:, 0]
-Y = xy[:, 1]
+x = xy[:, 0]
+y = xy[:, 1]
 
-ax = sns.histplot(X - Y)
+ax = sns.histplot(x - y)
 ax.set(xlabel='Difference of methods')
 plt.show()
 
 # Return approximate estimate of CCC 
 # with a alpha risk of 5% 
 # and an allowance of whithin sample deviation of 10%.
-ccc = sa.ccc(X, Y, method='approx', alpha=0.05, allowance=0.10)
+ccc = sa.ccc(x, y, method='approx', alpha=0.05, allowance=0.10)
 print(f"Approximate estimate of CCC: {ccc.estimate:.4f}\n\
 Lower confident interval of the estimate with confident level of 95%: {ccc.limit:.4f}\n")
 ```
@@ -58,11 +57,11 @@ Running the `main.py` with the argument `-e` will display the examples.
 ## Current Implementations
 
 For each index listed in the following table:
-- **naive** designed an implemetation using a parametric hypothesis (like a **normal** hypothesis), and thus only accurate if the hypothesis is true.
-- **robust** designed an implemetation not depending of any kind of hypothesis 
-- **tested** if the implementation of the said index is tested with a monte-carlo test and results are correct in regards of scientific literature. 
-- **bootstrap** if an alternative way to compute confident interval using a resample method is implemented
-- **unified model** if there is an implementation for model using continuous and categorical data (for instance with multiple raters and/or readings) - *not planned currently*
+- **naive** designes an implemetation using a parametric hypothesis (like a **normal** hypothesis), and thus only accurate if the hypothesis is true.
+- **robust** designes an implemetation not depending of any kind of hypothesis.
+- **tested** indicates if the implementation of the said index is tested with a monte-carlo test and results are correct in regards of the scientific literature. 
+- **bootstrap** indicates if an alternative way to compute confident interval using a resample method is implemented.
+- **unified model** indicates if there is an implementation for models using continuous and categorical data (for instance with multiple raters and/or readings) - *not planned currently*
 
 |Index | Naive | Tested | Robust |  Tested | Bootstrap | Unified model | 
 |--|:--:|:--:|:--:|:--:|:--:|:--:|
@@ -77,7 +76,7 @@ For each index listed in the following table:
 
 ## Test result
 
-Implementation of the indices are tested with a monte-carlo simulation. The goal is to match results from the scientific literature. Currently tests of mc simulation can be display running `main.py` with the `-s i` argument where `i` is the index simulated.
+Implementation of the indices are tested with a monte-carlo simulation. The goal is to match results from the scientific literature. Currently tests of mc simulations can be display running `main.py` with the `-s i` argument where `i` is the index simulated.
 
 Currently only `msd` and `ccc` tests are implemented. One can compare `msd` simulation results with \cite{LIN2000} and `ccc` one with \cite{LIN1989}.
 
