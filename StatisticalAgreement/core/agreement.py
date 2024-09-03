@@ -34,6 +34,7 @@ def _ccc_methods(x, y, method: str, alpha: float, allowance: float) -> Transform
         # King TS, Chinchilli VM.
         # Robust estimators of the concordance correlation coefficient.
         # J Biopharm Stat. 2001;11(3):83-105. doi: 10.1081/BIP-100107651. PMID: 11725932.
+        warnings.warn("The current implementation of the variance of the estimator is invalid.")
         return continuous_agreement.ccc_ustat(x, y, alpha, allowance)
 
     raise ValueError("Wrong method called for ccc computation, \
@@ -74,10 +75,10 @@ def _kappa_methods(x, y, method: str, alpha: float) -> TransformedEstimator:
     if method == "cohen":
         return categorical_agreement.cohen_kappa(x, y, c, alpha)
 
-    if method == "ciccetti" or method == "abs":
+    if method in {"ciccetti", "abs"}:
         return categorical_agreement.abs_kappa(x, y, c, alpha)
 
-    if method == "fleiss" or method == "squared":
+    if method in {"fleiss", "squared"}:
         return categorical_agreement.squared_kappa(x, y, c, alpha)
 
     raise ValueError("Wrong method called for kappa computation, \
@@ -126,9 +127,9 @@ class AgreementIndex:
 
         Examples
         --------
-        >>> X = np.array([12, 10, 13, 10])
-        >>> Y = np.array([11, 12, 16, 9])
-        >>> sa.ccc(X, Y, method='approx', alpha=0.05, allowance=0.10)
+        >>> x = np.array([12, 10, 13, 10])
+        >>> y = np.array([11, 12, 16, 9])
+        >>> sa.ccc(x, y, method='approx', alpha=0.05, allowance=0.10)
         Estimator(estimate=0.5714285714285715, limit=-0.4247655971444191, allowance=0.99)
         '''
 
@@ -176,10 +177,10 @@ def agreement(x, y, delta_criterion, pi_criterion, alpha=DEFAULT_ALPHA,
         if np.sum(x<=0) + np.sum(y<=0) > 0:
             flag = FlagData.NEGATIVE
             raise ValueError("Input data can't be negative for a log transformation")
-        else:
-            x=np.log(x)
-            y=np.log(y)
-            delta_criterion=np.log(1.0 + delta_criterion / 100.0)
+
+        x=np.log(x)
+        y=np.log(y)
+        delta_criterion=np.log(1.0 + delta_criterion / 100.0)
 
     res = pd.DataFrame(columns=["estimate", "limit", "variance", "transformed_function",
                                 "transformed_estimate", "transformed_variance", "allowance",
@@ -192,7 +193,8 @@ def agreement(x, y, delta_criterion, pi_criterion, alpha=DEFAULT_ALPHA,
     if flag != FlagData.CONSTANT:
         _rho = continuous_agreement.precision(x, y, alpha)
         _acc = continuous_agreement.accuracy(x, y, _rho, alpha)
-        _ccc_lin = continuous_agreement.ccc_lin(x, y, _rho, _acc, alpha, allowance_whitin_sample_deviation)
+        _ccc_lin = continuous_agreement.ccc_lin(x, y, _rho, _acc, alpha,
+                                                allowance_whitin_sample_deviation)
         _ccc_ustat = continuous_agreement.ccc_ustat(x, y, alpha, allowance_whitin_sample_deviation)
 
     _msd = continuous_agreement.msd_exact(x, y, alpha)
