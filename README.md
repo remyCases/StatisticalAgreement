@@ -9,9 +9,13 @@ Statistical Agreement is an ensemble of process to declare (or not) if two (or m
 
 Currently, only implementations for basic continuous or categorical models are planned.
 
-## Usage
+## Installation
 
-This project is not a proper python package yet. It will be distributed in the future via Pypi. Thus, to use it, you need to clone the current repo and include in your project.
+```sh
+pip install StatisticalAgreement==0.4.0
+```
+
+## Usage
 
 You can find examples in the example folder.
 

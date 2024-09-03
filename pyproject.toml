@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "StatisticalAgreement"
-version = "0.3.0"
+version = "0.4.0"
 authors = [
   { name="Cases Rémy", email="remy.cases@gmail.com" },
 ]
-description = "Implementation of CCC, TDI and CP for Statistical Agreement"
+description = "Implementation of indexes used in statistical agreement"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
