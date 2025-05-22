@@ -4,12 +4,21 @@
 
 import numpy as np
 from scipy.stats import norm, chi2
-from .classutils import TransformFunc, ConfidentLimit, TransformedEstimator
-from .mathutils import almost_equal_float
 
-def precision(x, y, alpha: float) -> TransformedEstimator:
+from StatisticalAgreement.core._types import NDArrayFloat
+
+from StatisticalAgreement.core.classutils import TransformFunc, ConfidentLimit, TransformedEstimator
+from StatisticalAgreement.core.mathutils import almost_equal_float
+
+
+def precision(
+        x: NDArrayFloat,
+        y: NDArrayFloat,
+        alpha: float
+    ) -> TransformedEstimator:
+
     n = len(x)
-    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
+    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True, dtype=np.float64).flatten()
 
     sqr_var = np.sqrt(s_sq_hat_biased_x * s_sq_hat_biased_y)
     rho_hat = s_hat_biased_xy / sqr_var
@@ -25,12 +34,19 @@ def precision(x, y, alpha: float) -> TransformedEstimator:
     )
     return rho
 
-def accuracy(x, y, t_precision: TransformedEstimator, alpha: float) -> TransformedEstimator:
+
+def accuracy(
+        x: NDArrayFloat,
+        y: NDArrayFloat,
+        t_precision: TransformedEstimator,
+        alpha: float
+    ) -> TransformedEstimator:
+
     n = len(x)
-    mu_d = np.mean(x - y)
+    mu_d = np.mean(x - y, dtype=np.float64)
     rho_hat = t_precision.estimate
 
-    s_sq_hat_biased_x, _, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
+    s_sq_hat_biased_x, _, _, s_sq_hat_biased_y = np.cov(x, y, bias=True, dtype=np.float64).flatten()
     sqr_var = np.sqrt(s_sq_hat_biased_x * s_sq_hat_biased_y)
     nu_sq_hat = mu_d**2 / sqr_var
     omega_hat = np.sqrt(s_sq_hat_biased_x / s_sq_hat_biased_y)
@@ -52,16 +68,21 @@ def accuracy(x, y, t_precision: TransformedEstimator, alpha: float) -> Transform
     )
     return acc
 
-def ccc_lin(x, y,
-            t_precision: TransformedEstimator,
-            t_accuracy: TransformedEstimator,
-            alpha: float,
-            allowance_whitin_sample_deviation: float) -> TransformedEstimator:
+
+def ccc_lin(
+        x: NDArrayFloat,
+        y: NDArrayFloat,
+        t_precision: TransformedEstimator,
+        t_accuracy: TransformedEstimator,
+        alpha: float,
+        allowance_whitin_sample_deviation: float
+    ) -> TransformedEstimator:
+
     n = len(x)
-    mu_d = np.mean(x - y)
+    mu_d = np.mean(x - y, dtype=np.float64)
     rho_hat = t_precision.estimate
 
-    s_sq_hat_biased_x, _, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
+    s_sq_hat_biased_x, _, _, s_sq_hat_biased_y = np.cov(x, y, bias=True, dtype=np.float64).flatten()
     sqr_var = np.sqrt(s_sq_hat_biased_x * s_sq_hat_biased_y)
     nu_sq_hat = mu_d**2 / sqr_var
 
@@ -83,7 +104,14 @@ def ccc_lin(x, y,
     )
     return ccc
 
-def ccc_ustat(x, y, alpha: float, allowance_whitin_sample_deviation: float) -> TransformedEstimator:
+
+def ccc_ustat(
+        x: NDArrayFloat,
+        y: NDArrayFloat,
+        alpha: float,
+        allowance_whitin_sample_deviation: float
+    ) -> TransformedEstimator:
+
     n = len(x)
     sx = np.sum(x)
     sy = np.sum(y)
@@ -132,12 +160,18 @@ def ccc_ustat(x, y, alpha: float, allowance_whitin_sample_deviation: float) -> T
     )
     return ccc
 
-def msd_exact(x, y, alpha: float) -> TransformedEstimator:
+
+def msd_exact(
+        x: NDArrayFloat,
+        y: NDArrayFloat,
+        alpha: float
+    ) -> TransformedEstimator:
+
     n = len(x)
     d = x - y
-    mu_d = np.mean(d)
+    mu_d = np.mean(d, dtype=np.float64)
 
-    eps_sq_hat = np.sum(d**2) / (n - 1)
+    eps_sq_hat = np.sum(d**2, dtype=np.float64) / (n - 1)
     var_esp_hat = 2 / (n - 2) * ( eps_sq_hat**2 - mu_d**4 )
     var_w_hat = var_esp_hat / eps_sq_hat**2
 
@@ -152,6 +186,7 @@ def msd_exact(x, y, alpha: float) -> TransformedEstimator:
     )
     return msd
 
+
 def _rbs_allowance(cp_allowance: float) -> float:
     if almost_equal_float(cp_allowance, 0.75):
         return .5
@@ -165,12 +200,18 @@ def _rbs_allowance(cp_allowance: float) -> float:
         return .5
     return np.nan
 
-def rbs(x, y, cp_allowance: float) -> TransformedEstimator:
+
+def rbs(
+        x: NDArrayFloat, 
+        y: NDArrayFloat, 
+        cp_allowance: float
+    ) -> TransformedEstimator:
+
     n = len(x)
     d = x - y
-    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
+    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True, dtype=np.float64).flatten()
     s_sq_hat_d = n / (n - 3) * (s_sq_hat_biased_x + s_sq_hat_biased_y - 2 * s_hat_biased_xy)
-    mu_d = np.mean(d)
+    mu_d = np.mean(d, dtype=np.float64)
 
     rbs_hat = mu_d**2 / s_sq_hat_d
     _rbs = TransformedEstimator(
@@ -179,16 +220,25 @@ def rbs(x, y, cp_allowance: float) -> TransformedEstimator:
     )
     return _rbs
 
-def cp_approx(x, y, msd: TransformedEstimator, alpha: float, delta_criterion: float, cp_allowance: float) -> TransformedEstimator:
+
+def cp_approx(
+        x: NDArrayFloat,
+        y: NDArrayFloat,
+        msd: TransformedEstimator, 
+        alpha: float, 
+        delta_criterion: float, 
+        cp_allowance: float
+    ) -> TransformedEstimator:
+
     n = len(x)
     d = x - y
-    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
+    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True, dtype=np.float64).flatten()
     s_sq_hat_d = n / (n - 3) * (s_sq_hat_biased_x + s_sq_hat_biased_y - 2 * s_hat_biased_xy)
-    mu_d = np.mean(d)
+    mu_d = np.mean(d, dtype=np.float64)
 
-    delta_plus = (delta_criterion + mu_d) / np.sqrt(s_sq_hat_d)
+    delta_plus: float = (delta_criterion + mu_d) / np.sqrt(s_sq_hat_d)
     n_delta_plus = norm.pdf(-delta_plus)
-    delta_minus = (delta_criterion - mu_d) / np.sqrt(s_sq_hat_d)
+    delta_minus: float = (delta_criterion - mu_d) / np.sqrt(s_sq_hat_d)
     n_delta_minus = norm.pdf(delta_minus)
 
     cp_hat = chi2.cdf(delta_criterion**2 / msd.estimate, df=1)
@@ -207,16 +257,24 @@ def cp_approx(x, y, msd: TransformedEstimator, alpha: float, delta_criterion: fl
     )
     return cp
 
-def cp_exact(x, y, alpha: float, delta_criterion: float, cp_allowance: float) -> TransformedEstimator:
+
+def cp_exact(
+        x: NDArrayFloat,
+        y: NDArrayFloat, 
+        alpha: float,
+        delta_criterion: float,
+        cp_allowance: float
+    ) -> TransformedEstimator:
+
     n = len(x)
     d = x - y
-    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True).flatten()
+    s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True, dtype=np.float64).flatten()
     s_sq_hat_d = n / (n - 3) * (s_sq_hat_biased_x + s_sq_hat_biased_y - 2 * s_hat_biased_xy)
-    mu_d = np.mean(d)
+    mu_d = np.mean(d, dtype=np.float64)
 
-    delta_plus = (delta_criterion + mu_d) / np.sqrt(s_sq_hat_d)
+    delta_plus: float = (delta_criterion + mu_d) / np.sqrt(s_sq_hat_d)
     n_delta_plus = norm.pdf(-delta_plus)
-    delta_minus = (delta_criterion - mu_d) / np.sqrt(s_sq_hat_d)
+    delta_minus: float = (delta_criterion - mu_d) / np.sqrt(s_sq_hat_d)
     n_delta_minus = norm.pdf(delta_minus)
 
     cp_hat = norm.cdf(delta_minus) - norm.cdf(-delta_plus)
@@ -236,8 +294,18 @@ def cp_exact(x, y, alpha: float, delta_criterion: float, cp_allowance: float) ->
     )
     return cp
 
-def tdi_approx(msd: TransformedEstimator, pi_criterion: float, tdi_allowance: float) -> TransformedEstimator:
+
+def tdi_approx(
+        msd: TransformedEstimator, 
+        pi_criterion: float, 
+        tdi_allowance: float
+    ) -> TransformedEstimator:
+
     coeff_tdi = norm.ppf(1 - (1 - pi_criterion) / 2)
+
+    if msd.limit is None:
+        raise ValueError("Cannot compute tdi since no limit was computed for msd.")
+
     tdi = TransformedEstimator(
         estimate=coeff_tdi * np.sqrt(msd.estimate),
         limit=coeff_tdi * np.sqrt(msd.limit),

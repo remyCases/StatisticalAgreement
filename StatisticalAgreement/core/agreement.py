@@ -6,13 +6,16 @@
 ## Total deviation index for measuring individual agreement with applications in
 ## laboratory performance and bioequivalence. Statistics in Medicine, 19(2), 255–270
 
+from typing import Protocol, Union, runtime_checkable
 import warnings
 import numpy as np
 import pandas as pd
 from scipy.stats import shapiro
-from .classutils import Indices, FlagData, TransformedEstimator, Estimator
-from . import continuous_agreement
-from . import categorical_agreement
+
+from StatisticalAgreement.core import _continuous_agreement
+from StatisticalAgreement.core.classutils import ConfidentLimit, Estimator, FlagData, Indices, TransformFunc, TransformedEstimator
+from StatisticalAgreement.core._methods import ccc_methods, cp_methods, kappa_methods, msd_methods, tdi_methods
+
 
 DEFAULT_ALPHA = 0.05
 CP_DELTA = 0.5
@@ -21,79 +24,36 @@ CP_ALLOWANCE = 0.9
 TDI_ALLOWANCE = 10
 WITHIN_SAMPLE_DEVIATION = 0.15
 
-def _ccc_methods(x, y, method: str, alpha: float, allowance: float) -> TransformedEstimator:
 
-    if method == "approx":
-        # Lin LI. A concordance correlation coefficient to evaluate reproducibility.
-        # Biometrics. 1989 Mar;45(1):255-68. PMID: 2720055.
-        rho = continuous_agreement.precision(x, y, alpha)
-        acc = continuous_agreement.accuracy(x, y, rho, alpha)
-        return continuous_agreement.ccc_lin(x, y, rho, acc, alpha, allowance)
+@runtime_checkable
+class AgreementFunctor(Protocol):
+    def __call__(
+            self, 
+            x: np.typing.ArrayLike,
+            y: np.typing.ArrayLike,
+            method: str="approx",
+            alpha: float=DEFAULT_ALPHA,
+            criterion: float=0.0,
+            allowance: float=0.0,
+            transformed: bool=False
+        ) -> Union[Estimator, TransformedEstimator]:
+        ...
 
-    if method == "ustat":
-        # King TS, Chinchilli VM.
-        # Robust estimators of the concordance correlation coefficient.
-        # J Biopharm Stat. 2001;11(3):83-105. doi: 10.1081/BIP-100107651. PMID: 11725932.
-        warnings.warn("The current implementation of the variance of the estimator is invalid.")
-        return continuous_agreement.ccc_ustat(x, y, alpha, allowance)
-
-    raise ValueError("Wrong method called for ccc computation, \
-                     current possible methods are approx or ustat.")
-
-def _cp_methods(x, y, method: str, alpha: float, criterion: float, allowance: float) -> TransformedEstimator:
-
-    if method == "approx":
-        _msd = continuous_agreement.msd_exact(x, y, alpha)
-        return continuous_agreement.cp_approx(x, y, _msd, alpha, criterion, allowance)
-
-    if method == "exact":
-        return continuous_agreement.cp_exact(x, y, alpha, criterion, allowance)
-
-    raise ValueError("Wrong method called for cp computation, \
-                     current possible methods are approx or exact.")
-
-def _tdi_methods(x, y, method: str, alpha: float, criterion: float, allowance: float) -> TransformedEstimator:
-
-    if method == "approx":
-        _msd = continuous_agreement.msd_exact(x, y, alpha)
-        return continuous_agreement.tdi_approx(_msd, criterion, allowance)
-
-    raise ValueError("Wrong method called for tdi computation, \
-                     current possible methods are approx.")
-
-def _msd_methods(x, y, method: str, alpha: float) -> TransformedEstimator:
-
-    if method == "approx":
-        return continuous_agreement.msd_exact(x, y, alpha)
-
-    raise ValueError("Wrong method called for msd computation, \
-                     current possible methods are approx.")
-
-def _kappa_methods(x, y, method: str, alpha: float) -> TransformedEstimator:
-
-    c = max(len(np.unique(x)), len(np.unique(y)))
-    if method == "cohen":
-        return categorical_agreement.cohen_kappa(x, y, c, alpha)
-
-    if method in {"ciccetti", "abs"}:
-        return categorical_agreement.abs_kappa(x, y, c, alpha)
-
-    if method in {"fleiss", "squared"}:
-        return categorical_agreement.squared_kappa(x, y, c, alpha)
-
-    raise ValueError("Wrong method called for kappa computation, \
-                     current possible methods are cohen, abs or squared.")
 
 class AgreementIndex:
     def __init__(self, name: Indices):
         self._name = name
 
-    def __call__(self, x, y,
-                 method="approx",
-                 alpha=DEFAULT_ALPHA,
-                 criterion=0.0,
-                 allowance=0.0,
-                 transformed=False) -> Estimator | TransformedEstimator:
+    def __call__(
+            self, 
+            x: np.typing.ArrayLike,
+            y: np.typing.ArrayLike,
+            method: str="approx",
+            alpha: float=DEFAULT_ALPHA,
+            criterion: float=0.0,
+            allowance: float=0.0,
+            transformed: bool=False
+        ) -> Union[Estimator, TransformedEstimator]:
         '''
         Compute index estimate and its confident interval
 
@@ -133,75 +93,107 @@ class AgreementIndex:
         Estimator(estimate=0.5714285714285715, limit=-0.4247655971444191, allowance=0.99)
         '''
 
-        if len(x) <= 3 or len(y) <= 3:
+        try:
+            x_float = np.asarray(x, dtype=np.float64)
+            y_float = np.asarray(y, dtype=np.float64)
+        except ValueError as e:
+            raise TypeError("Input must be convertible to float") from e
+
+        if x_float.ndim == 0 or y_float.ndim == 0:
+            raise ValueError("Input must be at least 1-dimensional")
+    
+
+        if len(x_float) <= 3 or len(y_float) <= 3:
             raise ValueError("Not enough data to compute indices, \
                              need at least four elements on each array_like input.")
 
         if self._name == Indices.CCC:
-            index = _ccc_methods(x, y, method, alpha, allowance)
+            index = ccc_methods(x_float, y_float, method, alpha, allowance)
 
         elif self._name == Indices.CP:
-            index = _cp_methods(x, y, method, alpha, criterion, allowance)
+            index = cp_methods(x_float, y_float, method, alpha, criterion, allowance)
 
         elif self._name == Indices.TDI:
-            index = _tdi_methods(x, y, method, alpha, criterion, allowance)
+            index = tdi_methods(x_float, y_float, method, alpha, criterion, allowance)
 
         elif self._name == Indices.MSD:
-            index = _msd_methods(x, y, method, alpha)
+            index = msd_methods(x_float, y_float, method, alpha)
 
         elif self._name == Indices.KAPPA:
-            index = _kappa_methods(x, y, method, alpha)
+            index = kappa_methods(x_float, y_float, method, alpha)
+        else:
+            raise ValueError("Unknown index")
 
         if transformed:
             return index
 
         return index.as_estimator()
 
-ccc = AgreementIndex(name=Indices.CCC)
-cp = AgreementIndex(name=Indices.CP)
-tdi = AgreementIndex(name=Indices.TDI)
-msd = AgreementIndex(name=Indices.MSD)
-kappa = AgreementIndex(name=Indices.KAPPA)
-get_contingency_table = categorical_agreement.contingency
 
-def agreement(x, y, delta_criterion, pi_criterion, alpha=DEFAULT_ALPHA,
-              allowance_whitin_sample_deviation=WITHIN_SAMPLE_DEVIATION,
-              cp_allowance=CP_ALLOWANCE,
-              tdi_allowance=TDI_ALLOWANCE,
-              log=False,
-              display=False):
+def agreement(
+        x: np.typing.ArrayLike,
+        y: np.typing.ArrayLike,
+        delta_criterion: float,
+        pi_criterion: float, 
+        alpha: float=DEFAULT_ALPHA,
+        allowance_whitin_sample_deviation: float=WITHIN_SAMPLE_DEVIATION,
+        cp_allowance: float=CP_ALLOWANCE,
+        tdi_allowance: float=TDI_ALLOWANCE,
+        log: bool=False,
+        display: bool=False
+    ):
+
+    try:
+        x_float = np.asarray(x, dtype=np.float64)
+        y_float = np.asarray(y, dtype=np.float64)
+    except ValueError as e:
+        raise TypeError("Input must be convertible to float") from e
+
+    if x_float.ndim == 0 or y_float.ndim == 0:
+        raise ValueError("Input must be at least 1-dimensional")
 
     flag = FlagData.OK
 
     if log:
-        if np.sum(x<=0) + np.sum(y<=0) > 0:
+        if np.any(x_float<=0) or np.any(y_float<=0):
             flag = FlagData.NEGATIVE
             raise ValueError("Input data can't be negative for a log transformation")
 
-        x=np.log(x)
-        y=np.log(y)
+        x=np.log(x_float)
+        y=np.log(y_float)
         delta_criterion=np.log(1.0 + delta_criterion / 100.0)
 
     res = pd.DataFrame(columns=["estimate", "limit", "variance", "transformed_function",
                                 "transformed_estimate", "transformed_variance", "allowance",
                                 "robust"])
 
-    if np.var(x)==0 or np.var(y)==0:
+    if np.var(x_float)==0 or np.var(y_float)==0:
         flag = FlagData.CONSTANT
         warnings.warn("Input values are constant, can't compute ccc-related indexes")
 
     if flag != FlagData.CONSTANT:
-        _rho = continuous_agreement.precision(x, y, alpha)
-        _acc = continuous_agreement.accuracy(x, y, _rho, alpha)
-        _ccc_lin = continuous_agreement.ccc_lin(x, y, _rho, _acc, alpha,
+        _rho = _continuous_agreement.precision(x_float, y_float, alpha)
+        _acc = _continuous_agreement.accuracy(x_float, y_float, _rho, alpha)
+        _ccc_lin = _continuous_agreement.ccc_lin(x_float, y_float, _rho, _acc, alpha,
                                                 allowance_whitin_sample_deviation)
-        _ccc_ustat = continuous_agreement.ccc_ustat(x, y, alpha, allowance_whitin_sample_deviation)
+        _ccc_ustat = _continuous_agreement.ccc_ustat(x_float, y_float, alpha, allowance_whitin_sample_deviation)
+    else:
+        _rho = _acc = _ccc_lin = _ccc_ustat = TransformedEstimator(
+            estimate=np.nan,
+            variance=np.nan,
+            transformed_variance=np.nan,
+            transformed_function=TransformFunc.NONE,
+            allowance=1-allowance_whitin_sample_deviation**2,
+            alpha=alpha,
+            confident_limit=ConfidentLimit.NONE,
+            n=0
+        )
 
-    _msd = continuous_agreement.msd_exact(x, y, alpha)
-    _rbs = continuous_agreement.rbs(x, y, cp_allowance)
-    _cp_approx = continuous_agreement.cp_approx(x, y, _msd, alpha, delta_criterion, cp_allowance)
-    _cp = continuous_agreement.cp_exact(x, y, alpha, delta_criterion, cp_allowance)
-    _tdi = continuous_agreement.tdi_approx(_msd, pi_criterion, tdi_allowance)
+    _msd = _continuous_agreement.msd_exact(x_float, y_float, alpha)
+    _rbs = _continuous_agreement.rbs(x_float, y_float, cp_allowance)
+    _cp_approx = _continuous_agreement.cp_approx(x_float, y_float, _msd, alpha, delta_criterion, cp_allowance)
+    _cp = _continuous_agreement.cp_exact(x_float, y_float, alpha, delta_criterion, cp_allowance)
+    _tdi = _continuous_agreement.tdi_approx(_msd, pi_criterion, tdi_allowance)
 
     res.loc["acc", :] = _acc.to_series()
     res.loc["rho", :] = _rho.to_series()
@@ -220,6 +212,6 @@ def agreement(x, y, delta_criterion, pi_criterion, alpha=DEFAULT_ALPHA,
 
     if display:
         print(res)
-        print(shapiro(x - y))
+        print(shapiro(x_float - y_float))
 
     return flag, res

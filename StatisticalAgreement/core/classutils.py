@@ -3,7 +3,9 @@
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
 from enum import Enum
-from dataclasses import dataclass, field, InitVar
+from typing import Optional
+
+from attr import define, field
 from scipy.stats import norm, t
 import numpy as np
 import pandas as pd
@@ -21,38 +23,80 @@ class FlagData(Enum):
     NEGATIVE = 2
 
 class TransformFunc(Enum):
-    ID = 0
-    LOG = 1
-    Z = 2
-    LOGIT = 3
+    NONE = "none"
+    ID = "identity"
+    LOG = "logarithmic"
+    Z = "fisher_z"
+    LOGIT = "logit"
 
-    def apply(self, x: float) -> float:
+
+    def apply(self, x: np.typing.ArrayLike) -> np.typing.ArrayLike:
+        """
+        Apply transformation to input data.
+
+        Parameters
+        ----------
+        x : array_like
+            Input data. Must satisfy:
+            - LOG: x > 0
+            - Z: |x| < 1
+            - LOGIT: 0 < x < 1
+
+        Returns
+        -------
+        np.ndarray
+            Transformed data.
+        """
+        x_array = np.asarray(x, dtype=np.float64)
+        if x_array.size == 0:
+            return x_array
+        
         match self:
             case TransformFunc.ID:
-                return x
+                return x_array
             case TransformFunc.LOG:
+                if np.any(x_array <= 0):
+                    raise ValueError("LOG transformation requires all x > 0")
                 return np.log(x)
             case TransformFunc.Z:
-                return np.log((1.0 + x)/(1.0 - x)) * 0.5
+                if np.any(np.abs(x_array) >= 1):
+                    raise ValueError("Z transformation requires |x| < 1")
+                return np.log((1.0 + x_array)/(1.0 - x_array)) * 0.5
             case TransformFunc.LOGIT:
-                return np.log(x / (1.0 - x))
+                if np.any((x_array <= 0) | (x_array >= 1)):
+                    raise ValueError("LOGIT transformation requires 0 < x < 1")
+                return np.log(x_array / (1.0 - x_array))
+            case TransformFunc.NONE:
+                raise ValueError("Cannot apply a NONE transformer.")
 
-    def apply_inv(self, x: float) -> float:
+
+    def apply_inv(self, x: np.typing.ArrayLike) -> np.typing.ArrayLike:
+        x_array = np.asarray(x, dtype=np.float64)
+        if x_array.size == 0:
+            return x_array
+
         match self:
             case TransformFunc.ID:
-                return x
+                return x_array
             case TransformFunc.LOG:
-                return np.exp(x)
+                return np.exp(x_array)
             case TransformFunc.Z:
-                return (np.exp(2.0 * x) - 1.0) / (np.exp(2.0 * x) + 1.0)
+                exp_2x = np.exp(2.0 * x_array)
+                return (exp_2x - 1.0) / (exp_2x + 1.0)
             case TransformFunc.LOGIT:
-                return np.exp(x)/(np.exp(x) + 1.0)
+                exp_x = np.exp(x_array)
+                return exp_x/(exp_x + 1.0)
+            case TransformFunc.NONE:
+                raise ValueError("Cannot apply a NONE transformer.")
+
 
 class ConfidentLimit(Enum):
+    NONE = -1
     LOWER = 0
     UPPER = 1
 
-@dataclass
+
+@define
 class Estimator:
     estimate: float
     limit: float
@@ -63,23 +107,24 @@ class Estimator:
             "estimate": self.estimate,
             "limit": self.limit,
             "allowance": self.allowance,
-            })
+        })
 
-@dataclass
+
+@define
 class TransformedEstimator:
     estimate: float
-    variance: float | None = None
-    transformed_function: TransformFunc | None = None
-    transformed_estimate: float = field(init=False)
-    transformed_variance: float | None = None
-    limit: float | None = None
-    allowance: float | None = None
+    variance: Optional[float] = None
+    transformed_function: Optional[TransformFunc] = None
+    transformed_estimate: Optional[float] = field(init=False)
+    transformed_variance: Optional[float] = None
+    limit: Optional[float] = None
+    allowance: Optional[float] = None
     robust: bool = False
-    alpha: InitVar[float | None] = None
-    confident_limit: InitVar[ConfidentLimit | None] = None
-    n: InitVar[int] = 30
+    alpha: Optional[float] = None
+    confident_limit: ConfidentLimit = ConfidentLimit.NONE
+    n: int = 30
 
-    def __post_init__(self, alpha, confident_limit, n) -> None:
+    def __post_init__(self, alpha: float, confident_limit: ConfidentLimit, n: int) -> None:
         if self.variance is not None:
             if n >= 30:
                 coeff = norm.ppf(1 - alpha)
@@ -90,10 +135,11 @@ class TransformedEstimator:
             if self.transformed_variance is None:
                 self.transformed_variance = self.variance
 
+            transformed_limit = self.transformed_estimate
             if confident_limit == ConfidentLimit.UPPER:
-                transformed_limit = self.transformed_estimate + coeff * np.sqrt(self.transformed_variance)
+                transformed_limit += coeff * np.sqrt(self.transformed_variance)
             if confident_limit == ConfidentLimit.LOWER:
-                transformed_limit = self.transformed_estimate - coeff * np.sqrt(self.transformed_variance)
+                transformed_limit -= coeff * np.sqrt(self.transformed_variance)
 
             self.limit = self.transformed_function.apply_inv(transformed_limit)
         else:
@@ -109,7 +155,7 @@ class TransformedEstimator:
             "transformed_variance": self.transformed_variance,
             "allowance": self.allowance,
             "robust": self.robust,
-            })
+        })
 
     def as_estimator(self) -> Estimator:
         return Estimator(estimate=self.estimate, limit=self.limit, allowance=self.allowance)

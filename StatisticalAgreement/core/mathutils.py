@@ -4,7 +4,7 @@
 
 import numpy as np
 
-def almost_equal_float(first: float, second: float, max_ulps=4) -> bool:
+def almost_equal_float(first: float, second: float, max_ulps: int=4) -> bool:
     '''
     Asserts if two floats are almost equal.
 

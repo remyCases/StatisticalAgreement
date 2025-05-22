@@ -2,18 +2,20 @@
 # See LICENSE file for extended copyright information.
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
-from typing import NamedTuple
 from itertools import product
+from attr import define
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 from scipy.stats import multivariate_normal, shapiro
 import StatisticalAgreement as sa
+from StatisticalAgreement.core._types import NDArrayFloat
 from .monte_carlo import MonteCarlo
 
-class Models(NamedTuple):
-    mean: npt.ArrayLike
-    cov: npt.ArrayLike
+
+@define(kw_only=True)
+class Models:
+    mean: NDArrayFloat
+    cov: NDArrayFloat
 
 # Based on
 # Lin LI.
@@ -29,7 +31,7 @@ class Models(NamedTuple):
 
 MODELS = {
     '1': Models(mean=np.array([0, 0]), 
-                cov=np.array([[1, 0.95], [0.95, 1]])),
+                cov=np.array([[1.0, 0.95], [0.95, 1.0]])),
     '2': Models(mean=np.array([-np.sqrt(0.1)/2, np.sqrt(0.1)/2]), 
                 cov=np.array([[1.1**2, 0.95*1.1*0.9], [0.95*1.1*0.9, 0.9**2]])),
     '3': Models(mean=np.array([-np.sqrt(0.25)/2, np.sqrt(0.25)/2]), 
@@ -41,7 +43,8 @@ EXPECTED_VALUES = pd.DataFrame(data={"ccc": [0.950, 0.887, 0.360],
                                      "transformed_msd": [-2.303, -1.431, 0.640],},
                                index=['1', '2', '3'])
 
-def mc_simulation(name_of_index: str, str_criterion=""):
+
+def mc_simulation(name_of_index: str, str_criterion: str=""):
     try:
         criterion = float(str_criterion)
     except ValueError:
@@ -71,8 +74,10 @@ def mc_simulation(name_of_index: str, str_criterion=""):
     print(f"{name_of_index} with normal data:")
     print(result_df, '\n')
 
-def _simulation_from_model_and_ndata(n_iteration: int, n_data: int, model: str, result_df, name_of_index: str, criterion: float):
-    mean, cov = MODELS[model]
+
+def _simulation_from_model_and_ndata(n_iteration: int, n_data: int, model: str, result_df: pd.DataFrame, name_of_index: str, criterion: float):
+    m = MODELS[model]
+    mean, cov = m.mean, m.cov
     array_index = np.empty(n_iteration)
     array_index_std = np.empty(n_iteration)
     array_transformed_index = np.empty(n_iteration)
