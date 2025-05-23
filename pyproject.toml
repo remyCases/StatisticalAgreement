@@ -3,14 +3,18 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "StatisticalAgreement"
-version = "0.4.0"
+name = "statistical_agreement"
+version = "0.5.0"
+dependencies = [
+  "numpy>=1.22.0",
+  "scipy>=1.10",
+]
 authors = [
   { name="Cases Rémy", email="remy.cases@gmail.com" },
 ]
 description = "Implementation of indexes used in statistical agreement"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

@@ -5,9 +5,9 @@
 import warnings
 import numpy as np
 
-from StatisticalAgreement.core import _categorical_agreement, _continuous_agreement
-from StatisticalAgreement.core.classutils import Indices, TransformedEstimator
-from StatisticalAgreement.core._types import NDArrayFloat, NDArrayInt
+from statistical_agreement.core import _categorical_agreement, _continuous_agreement
+from statistical_agreement.core.classutils import Indices, TransformedEstimator
+from statistical_agreement.core._types import NDArrayFloat, NDArrayInt
 
 
 def _ccc_methods(

@@ -11,9 +11,9 @@ import warnings
 import numpy as np
 from scipy.stats import shapiro
 
-from StatisticalAgreement.core import _continuous_agreement
-from StatisticalAgreement.core.classutils import ConfidentLimit, Estimator, FlagData, Indices, TransformFunc, TransformedEstimator
-from StatisticalAgreement.core._methods import categorical_methods, continuous_methods
+from statistical_agreement.core import _continuous_agreement
+from statistical_agreement.core.classutils import ConfidentLimit, Estimator, FlagData, Indices, TransformFunc, TransformedEstimator
+from statistical_agreement.core._methods import categorical_methods, continuous_methods
 
 
 DEFAULT_ALPHA = 0.05
@@ -99,7 +99,7 @@ class AgreementIndex:
                 index = categorical_methods(self._name, x_int, y_int, method, alpha, criterion, allowance)
 
             except ValueError as e:
-                raise TypeError("Input must be convertible to float") from e
+                raise TypeError("Input must be convertible to int") from e
         else:
             try:
                 x_float = np.asarray(x, dtype=np.float64)

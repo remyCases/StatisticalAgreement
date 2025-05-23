@@ -1,7 +1,7 @@
-numpy
+numpy >= 1.22.0
 pandas
 pandas-stubs
-scipy
+scipy >= 1.10
 scipy-stubs
 matplotlib
 attrs

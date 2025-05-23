@@ -2,11 +2,12 @@
 # See LICENSE file for extended copyright information.
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
-from StatisticalAgreement.core import _categorical_agreement
-from StatisticalAgreement.core.classutils import Indices
-from StatisticalAgreement.core.agreement import AgreementFunctor, AgreementIndex
-from StatisticalAgreement.core.agreement import agreement as agreement
-from StatisticalAgreement.simulation.mc_simulation import mc_simulation as mc_simulation
+from statistical_agreement.core import _categorical_agreement
+from statistical_agreement.core.classutils import Indices
+from statistical_agreement.core.agreement import AgreementFunctor, AgreementIndex
+from statistical_agreement.core.agreement import agreement as agreement
+from statistical_agreement.simulation.mc_simulation import mc_simulation as mc_simulation
+
 
 ccc = AgreementIndex(name=Indices.CCC)
 assert isinstance(ccc, AgreementFunctor)

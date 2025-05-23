@@ -5,8 +5,8 @@
 from itertools import product
 import numpy as np
 
-from StatisticalAgreement.core._types import NDArrayInt
-from StatisticalAgreement.core.classutils import TransformFunc, ConfidentLimit, TransformedEstimator
+from statistical_agreement.core._types import NDArrayInt
+from statistical_agreement.core.classutils import TransformFunc, ConfidentLimit, TransformedEstimator
 
 def contingency(
         x: NDArrayInt, 

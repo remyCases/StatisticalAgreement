@@ -7,7 +7,7 @@ from unittest.util import safe_repr
 import numpy as np
 from scipy.stats import norm, sem
 
-from StatisticalAgreement.simulation.monte_carlo import MonteCarlo
+from statistical_agreement.simulation.monte_carlo import MonteCarlo
 
 N_REPETITION = 5000
 

@@ -13,7 +13,7 @@ Currently, only implementations for basic continuous or categorical models are p
 ## Installation
 
 ```sh
-pip install StatisticalAgreement==0.4.0
+pip install statistical_agreement
 ```
 
 ## Usage
@@ -25,7 +25,7 @@ Here is an example of CCC usage with Gaussian simulated data:
 ```python
 from scipy. stats import multivariate_normal
 import numpy as np
-import StatisticalAgreement as sa
+import statistical_agreement as sa
 
 import seaborn as sns    
 import matplotlib.pyplot as plt

@@ -7,8 +7,8 @@ from attr import define
 import numpy as np
 import pandas as pd
 from scipy.stats import multivariate_normal, shapiro
-import StatisticalAgreement as sa
-from StatisticalAgreement.core._types import NDArrayFloat
+import statistical_agreement as sa
+from statistical_agreement.core._types import NDArrayFloat
 from .monte_carlo import MonteCarlo
 
 
