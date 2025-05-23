@@ -2,10 +2,9 @@
 # See LICENSE file for extended copyright information.
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
-from itertools import product
+from typing import Dict, Tuple
 from attr import define
 import numpy as np
-import pandas as pd
 from scipy.stats import multivariate_normal, shapiro
 import statistical_agreement as sa
 from statistical_agreement.core._types import NDArrayFloat
@@ -37,14 +36,18 @@ MODELS = {
     "3": Models(mean=np.array([-np.sqrt(0.25)/2, np.sqrt(0.25)/2]), 
                 cov=np.array([[(4/3)**2, 0.5*4/3*2/3], [0.5*4/3*2/3, (2/3)**2]]))}
 
-EXPECTED_VALUES = pd.DataFrame(data={"ccc": [0.950, 0.887, 0.360],
-                                     "transformed_ccc": [1.832, 1.408, 0.377],
-                                     "msd": [0.100, 0.239, 0.1583],
-                                     "transformed_msd": [-2.303, -1.431, 0.640],},
-                               index=["1", "2", "3"])
+EXPECTED_VALUES = {
+    "ccc": {"1": 0.950, "2": 0.887, "3": 0.360},
+    "transformed_ccc": {"1": 1.832, "2": 1.408, "3": 0.377},
+    "msd": {"1": 0.100, "2": 0.239, "3": 0.1583},
+    "transformed_msd": {"1": -2.303, "2": -1.431, "3": 0.640},
+}
 
 
-def mc_simulation(name_of_index: str, str_criterion: str="") -> None:
+def mc_simulation(
+        name_of_index: str, 
+        str_criterion: str=""
+    ) -> Tuple[str, Dict[Tuple[str, str], Dict[Tuple[int, str], float]]]:
     try:
         criterion = float(str_criterion)
     except ValueError:
@@ -53,36 +56,33 @@ def mc_simulation(name_of_index: str, str_criterion: str="") -> None:
     data_possibilities = [10, 20, 50]
     models_possibilities = ["1", "2", "3"]
 
-    tuples_row = tuple(product(models_possibilities, [f"{name_of_index}",
-                                                      f"s_{name_of_index}",
-                                                      f"transformed_{name_of_index}", 
-                                                      f"s_transformed_{name_of_index}"]))
-    multi_index = pd.MultiIndex.from_tuples(tuples_row, names=("case", "estimator"))
-
-    tuples_col = tuple(product(data_possibilities, ["mean", "std", "pvalue"]))
-    multi_col = pd.MultiIndex.from_tuples(tuples_col, names=("n", ""))
-
-    result_df = pd.DataFrame(index=multi_index, columns=multi_col)
-
+    result: Dict[Tuple[str, str], Dict[Tuple[int, str], float]] = {}
     for m in models_possibilities:
         for d in data_possibilities:
-            _simulation_from_model_and_ndata(n_iteration=5000, n_data=d, model=m, result_df=result_df,
-                                             name_of_index=name_of_index, criterion=criterion)
-            result_df.loc[(m, f"{name_of_index}"), "true_value"] = EXPECTED_VALUES.loc[m, f"{name_of_index}"]
-            result_df.loc[(m, f"transformed_{name_of_index}"), "true_value"] = EXPECTED_VALUES.loc[m, f"transformed_{name_of_index}"]
+            a = _simulation_from_model_and_ndata(
+                n_iteration=5000, 
+                n_data=d, 
+                model=m, 
+                name_of_index=name_of_index, 
+                criterion=criterion
+            )
+            for k, v in a.items():
+                if k not in result:
+                    result[k] = v
+                else:
+                    result[k].update(v)
 
-    print(f"{name_of_index} with normal data:")
-    print(result_df, "\n")
+    return name_of_index, result
 
 
 def _simulation_from_model_and_ndata(
         n_iteration: int, 
         n_data: int, 
-        model: str, 
-        result_df: pd.DataFrame, 
+        model: str,
         name_of_index: str, 
         criterion: float
-    ) -> None:
+    ) -> Dict[Tuple[str, str], Dict[Tuple[int, str], float]]:
+
     m = MODELS[model]
     mean, cov = m.mean, m.cov
     array_index = np.empty(n_iteration)
@@ -111,14 +111,24 @@ def _simulation_from_model_and_ndata(
     mc_transformed_index = mc.compute(array_transformed_index)
     mc_transformed_index_std = mc.compute(array_transformed_index_std)
 
-    result_df.loc[(model, name_of_index), (n_data, "mean")] = mc_index.mean
-    result_df.loc[(model, f"transformed_{name_of_index}"), (n_data, "mean")] = mc_transformed_index.mean
+    res: Dict[Tuple[str, str], Dict[Tuple[int, str], float]] = {}
 
-    result_df.loc[(model, f"s_{name_of_index}"), (n_data, "mean")] = mc_index_std.mean
-    result_df.loc[(model, f"s_transformed_{name_of_index}"), (n_data, "mean")] = mc_transformed_index_std.mean
+    res[(model, f"{name_of_index}")] = {}
+    res[(model, f"{name_of_index}")][(n_data, "mean")] = mc_index.mean
+    res[(model, f"{name_of_index}")][(n_data, "std")] = np.sqrt(mc_index.var)
+    res[(model, f"{name_of_index}")][(n_data, "pvalue")] = shapiro(array_index).pvalue
+    res[(model, f"{name_of_index}")][(n_data, "true_value")] = EXPECTED_VALUES[f"{name_of_index}"][model]
 
-    result_df.loc[(model, f"{name_of_index}"), (n_data, "std")] = np.sqrt(mc_index.var)
-    result_df.loc[(model, f"transformed_{name_of_index}"), (n_data, "std")] = np.sqrt(mc_transformed_index.var)
+    res[(model, f"transformed_{name_of_index}")] = {}
+    res[(model, f"transformed_{name_of_index}")][(n_data, "mean")] = mc_transformed_index.mean
+    res[(model, f"transformed_{name_of_index}")][(n_data, "std")] = np.sqrt(mc_transformed_index.var)
+    res[(model, f"transformed_{name_of_index}")][(n_data, "pvalue")] = shapiro(array_transformed_index).pvalue
+    res[(model, f"transformed_{name_of_index}")][(n_data, "true_value")] = EXPECTED_VALUES[f"transformed_{name_of_index}"][model]
 
-    result_df.loc[(model, f"{name_of_index}"), (n_data, "pvalue")] = shapiro(array_index).pvalue
-    result_df.loc[(model, f"transformed_{name_of_index}"), (n_data, "pvalue")] = shapiro(array_transformed_index).pvalue
+    res[(model, f"s_{name_of_index}")] = {}
+    res[(model, f"s_{name_of_index}")][(n_data, "mean")] = mc_index_std.mean
+
+    res[(model, f"s_transformed_{name_of_index}")] = {}
+    res[(model, f"s_transformed_{name_of_index}")][(n_data, "mean")] = mc_transformed_index_std.mean
+
+    return res

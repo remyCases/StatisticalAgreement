@@ -3,6 +3,8 @@
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
 import argparse
+
+import pandas as pd
 import statistical_agreement as sa
 from examples import examples
 
@@ -16,7 +18,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.simulation:
-        sa.mc_simulation(*args.simulation)
+        name_of_index, res = sa.mc_simulation(*args.simulation)
+        print(f"{name_of_index} with normal data:")
+        print(pd.DataFrame(res), "\n")
 
     if args.exampleCat:
         examples.main(categorical=True)
