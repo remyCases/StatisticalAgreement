@@ -30,37 +30,37 @@ class Models:
 # pages 90-94
 
 MODELS = {
-    '1': Models(mean=np.array([0, 0]), 
+    "1": Models(mean=np.array([0, 0]), 
                 cov=np.array([[1.0, 0.95], [0.95, 1.0]])),
-    '2': Models(mean=np.array([-np.sqrt(0.1)/2, np.sqrt(0.1)/2]), 
+    "2": Models(mean=np.array([-np.sqrt(0.1)/2, np.sqrt(0.1)/2]), 
                 cov=np.array([[1.1**2, 0.95*1.1*0.9], [0.95*1.1*0.9, 0.9**2]])),
-    '3': Models(mean=np.array([-np.sqrt(0.25)/2, np.sqrt(0.25)/2]), 
+    "3": Models(mean=np.array([-np.sqrt(0.25)/2, np.sqrt(0.25)/2]), 
                 cov=np.array([[(4/3)**2, 0.5*4/3*2/3], [0.5*4/3*2/3, (2/3)**2]]))}
 
 EXPECTED_VALUES = pd.DataFrame(data={"ccc": [0.950, 0.887, 0.360],
                                      "transformed_ccc": [1.832, 1.408, 0.377],
                                      "msd": [0.100, 0.239, 0.1583],
                                      "transformed_msd": [-2.303, -1.431, 0.640],},
-                               index=['1', '2', '3'])
+                               index=["1", "2", "3"])
 
 
-def mc_simulation(name_of_index: str, str_criterion: str=""):
+def mc_simulation(name_of_index: str, str_criterion: str="") -> None:
     try:
         criterion = float(str_criterion)
     except ValueError:
-        criterion = 0
+        criterion = 0.0
 
     data_possibilities = [10, 20, 50]
-    models_possibilities = ['1', '2', '3']
+    models_possibilities = ["1", "2", "3"]
 
-    tuples_row = tuple(product(models_possibilities, [f'{name_of_index}',
-                                                      f's_{name_of_index}',
-                                                      f'transformed_{name_of_index}', 
-                                                      f's_transformed_{name_of_index}']))
-    multi_index = pd.MultiIndex.from_tuples(tuples_row, names=('case', 'estimator'))
+    tuples_row = tuple(product(models_possibilities, [f"{name_of_index}",
+                                                      f"s_{name_of_index}",
+                                                      f"transformed_{name_of_index}", 
+                                                      f"s_transformed_{name_of_index}"]))
+    multi_index = pd.MultiIndex.from_tuples(tuples_row, names=("case", "estimator"))
 
-    tuples_col = tuple(product(data_possibilities, ['mean', 'std', 'pvalue']))
-    multi_col = pd.MultiIndex.from_tuples(tuples_col, names=('n', ''))
+    tuples_col = tuple(product(data_possibilities, ["mean", "std", "pvalue"]))
+    multi_col = pd.MultiIndex.from_tuples(tuples_col, names=("n", ""))
 
     result_df = pd.DataFrame(index=multi_index, columns=multi_col)
 
@@ -68,14 +68,21 @@ def mc_simulation(name_of_index: str, str_criterion: str=""):
         for d in data_possibilities:
             _simulation_from_model_and_ndata(n_iteration=5000, n_data=d, model=m, result_df=result_df,
                                              name_of_index=name_of_index, criterion=criterion)
-            result_df.loc[(m, f'{name_of_index}'), "true_value"] = EXPECTED_VALUES.loc[m, f'{name_of_index}']
-            result_df.loc[(m, f'transformed_{name_of_index}'), "true_value"] = EXPECTED_VALUES.loc[m, f'transformed_{name_of_index}']
+            result_df.loc[(m, f"{name_of_index}"), "true_value"] = EXPECTED_VALUES.loc[m, f"{name_of_index}"]
+            result_df.loc[(m, f"transformed_{name_of_index}"), "true_value"] = EXPECTED_VALUES.loc[m, f"transformed_{name_of_index}"]
 
     print(f"{name_of_index} with normal data:")
-    print(result_df, '\n')
+    print(result_df, "\n")
 
 
-def _simulation_from_model_and_ndata(n_iteration: int, n_data: int, model: str, result_df: pd.DataFrame, name_of_index: str, criterion: float):
+def _simulation_from_model_and_ndata(
+        n_iteration: int, 
+        n_data: int, 
+        model: str, 
+        result_df: pd.DataFrame, 
+        name_of_index: str, 
+        criterion: float
+    ) -> None:
     m = MODELS[model]
     mean, cov = m.mean, m.cov
     array_index = np.empty(n_iteration)
@@ -86,7 +93,7 @@ def _simulation_from_model_and_ndata(n_iteration: int, n_data: int, model: str, 
 
     for i in range(n_iteration):
         multidim = multivariate_normal.rvs(mean=mean, cov=cov, size=n_data)
-        index = index_func(multidim[:, 0], multidim[:, 1], method='approx', alpha=0.05, transformed=True, criterion=criterion)
+        index = index_func(multidim[:, 0], multidim[:, 1], method="approx", alpha=0.05, transformed=True, criterion=criterion)
 
         array_index[i] = index.estimate
         array_transformed_index[i] = index.transformed_estimate
@@ -104,14 +111,14 @@ def _simulation_from_model_and_ndata(n_iteration: int, n_data: int, model: str, 
     mc_transformed_index = mc.compute(array_transformed_index)
     mc_transformed_index_std = mc.compute(array_transformed_index_std)
 
-    result_df.loc[(model, name_of_index), (n_data, 'mean')] = mc_index.mean
-    result_df.loc[(model, f'transformed_{name_of_index}'), (n_data, 'mean')] = mc_transformed_index.mean
+    result_df.loc[(model, name_of_index), (n_data, "mean")] = mc_index.mean
+    result_df.loc[(model, f"transformed_{name_of_index}"), (n_data, "mean")] = mc_transformed_index.mean
 
-    result_df.loc[(model, f's_{name_of_index}'), (n_data, 'mean')] = mc_index_std.mean
-    result_df.loc[(model, f's_transformed_{name_of_index}'), (n_data, 'mean')] = mc_transformed_index_std.mean
+    result_df.loc[(model, f"s_{name_of_index}"), (n_data, "mean")] = mc_index_std.mean
+    result_df.loc[(model, f"s_transformed_{name_of_index}"), (n_data, "mean")] = mc_transformed_index_std.mean
 
-    result_df.loc[(model, f'{name_of_index}'), (n_data, 'std')] = np.sqrt(mc_index.var)
-    result_df.loc[(model, f'transformed_{name_of_index}'), (n_data, 'std')] = np.sqrt(mc_transformed_index.var)
+    result_df.loc[(model, f"{name_of_index}"), (n_data, "std")] = np.sqrt(mc_index.var)
+    result_df.loc[(model, f"transformed_{name_of_index}"), (n_data, "std")] = np.sqrt(mc_transformed_index.var)
 
-    result_df.loc[(model, f'{name_of_index}'), (n_data, 'pvalue')] = shapiro(array_index).pvalue
-    result_df.loc[(model, f'transformed_{name_of_index}'), (n_data, 'pvalue')] = shapiro(array_transformed_index).pvalue
+    result_df.loc[(model, f"{name_of_index}"), (n_data, "pvalue")] = shapiro(array_index).pvalue
+    result_df.loc[(model, f"transformed_{name_of_index}"), (n_data, "pvalue")] = shapiro(array_transformed_index).pvalue

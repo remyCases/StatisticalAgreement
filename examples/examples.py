@@ -1,7 +1,8 @@
 import numpy as np
+import pandas as pd
 import StatisticalAgreement as sa
 
-def main(categorical: bool = False, continuous: bool = False):
+def main(categorical: bool = False, continuous: bool = False) -> None:
 
     if categorical:
         x_cat = np.repeat([0, 0, 0, 1, 1, 1, 2, 2, 2], [11, 2, 19, 1, 3, 3, 0, 8, 82])
@@ -43,7 +44,10 @@ def main(categorical: bool = False, continuous: bool = False):
         delta_criterion_for_cp=2
         pi_criterion_for_tdi=0.9
 
-        sa.agreement(x, y,
+        _, res = sa.agreement(
+            x, y,
             delta_criterion_for_cp,
             pi_criterion_for_tdi,
-            display=True)
+            display=True
+        )
+        print(pd.DataFrame(res))

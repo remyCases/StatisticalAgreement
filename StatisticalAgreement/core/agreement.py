@@ -6,15 +6,14 @@
 ## Total deviation index for measuring individual agreement with applications in
 ## laboratory performance and bioequivalence. Statistics in Medicine, 19(2), 255–270
 
-from typing import Protocol, Union, runtime_checkable
+from typing import Dict, Protocol, Tuple, Union, runtime_checkable
 import warnings
 import numpy as np
-import pandas as pd
 from scipy.stats import shapiro
 
 from StatisticalAgreement.core import _continuous_agreement
 from StatisticalAgreement.core.classutils import ConfidentLimit, Estimator, FlagData, Indices, TransformFunc, TransformedEstimator
-from StatisticalAgreement.core._methods import ccc_methods, cp_methods, kappa_methods, msd_methods, tdi_methods
+from StatisticalAgreement.core._methods import categorical_methods, continuous_methods
 
 
 DEFAULT_ALPHA = 0.05
@@ -54,7 +53,7 @@ class AgreementIndex:
             allowance: float=0.0,
             transformed: bool=False
         ) -> Union[Estimator, TransformedEstimator]:
-        '''
+        """
         Compute index estimate and its confident interval
 
         Parameters
@@ -89,40 +88,26 @@ class AgreementIndex:
         --------
         >>> x = np.array([12, 10, 13, 10])
         >>> y = np.array([11, 12, 16, 9])
-        >>> sa.ccc(x, y, method='approx', alpha=0.05, allowance=0.10)
+        >>> sa.ccc(x, y, method="approx", alpha=0.05, allowance=0.10)
         Estimator(estimate=0.5714285714285715, limit=-0.4247655971444191, allowance=0.99)
-        '''
+        """
+        
+        if self._name == Indices.KAPPA:
+            try:
+                x_int = np.asarray(x, dtype=np.int64)
+                y_int = np.asarray(y, dtype=np.int64)
+                index = categorical_methods(self._name, x_int, y_int, method, alpha, criterion, allowance)
 
-        try:
-            x_float = np.asarray(x, dtype=np.float64)
-            y_float = np.asarray(y, dtype=np.float64)
-        except ValueError as e:
-            raise TypeError("Input must be convertible to float") from e
-
-        if x_float.ndim == 0 or y_float.ndim == 0:
-            raise ValueError("Input must be at least 1-dimensional")
-    
-
-        if len(x_float) <= 3 or len(y_float) <= 3:
-            raise ValueError("Not enough data to compute indices, \
-                             need at least four elements on each array_like input.")
-
-        if self._name == Indices.CCC:
-            index = ccc_methods(x_float, y_float, method, alpha, allowance)
-
-        elif self._name == Indices.CP:
-            index = cp_methods(x_float, y_float, method, alpha, criterion, allowance)
-
-        elif self._name == Indices.TDI:
-            index = tdi_methods(x_float, y_float, method, alpha, criterion, allowance)
-
-        elif self._name == Indices.MSD:
-            index = msd_methods(x_float, y_float, method, alpha)
-
-        elif self._name == Indices.KAPPA:
-            index = kappa_methods(x_float, y_float, method, alpha)
+            except ValueError as e:
+                raise TypeError("Input must be convertible to float") from e
         else:
-            raise ValueError("Unknown index")
+            try:
+                x_float = np.asarray(x, dtype=np.float64)
+                y_float = np.asarray(y, dtype=np.float64)
+                index = continuous_methods(self._name, x_float, y_float, method, alpha, criterion, allowance)
+
+            except ValueError as e:
+                raise TypeError("Input must be convertible to float") from e
 
         if transformed:
             return index
@@ -141,7 +126,7 @@ def agreement(
         tdi_allowance: float=TDI_ALLOWANCE,
         log: bool=False,
         display: bool=False
-    ):
+    ) -> Tuple[FlagData, Dict[str, Dict[str, Union[float, str, bool]]]]:
 
     try:
         x_float = np.asarray(x, dtype=np.float64)
@@ -162,10 +147,8 @@ def agreement(
         x=np.log(x_float)
         y=np.log(y_float)
         delta_criterion=np.log(1.0 + delta_criterion / 100.0)
-
-    res = pd.DataFrame(columns=["estimate", "limit", "variance", "transformed_function",
-                                "transformed_estimate", "transformed_variance", "allowance",
-                                "robust"])
+    
+    res: Dict[str, Dict[str, Union[float, str, bool]]] = {}
 
     if np.var(x_float)==0 or np.var(y_float)==0:
         flag = FlagData.CONSTANT
@@ -195,23 +178,22 @@ def agreement(
     _cp = _continuous_agreement.cp_exact(x_float, y_float, alpha, delta_criterion, cp_allowance)
     _tdi = _continuous_agreement.tdi_approx(_msd, pi_criterion, tdi_allowance)
 
-    res.loc["acc", :] = _acc.to_series()
-    res.loc["rho", :] = _rho.to_series()
-    res.loc["ccc", :] = _ccc_lin.to_series()
-    res.loc["ccc_robust", :] = _ccc_ustat.to_series()
-    res.loc["msd", :] = _msd.to_series()
-    res.loc["rbs", :] = _rbs.to_series()
+    res["acc"] = _acc.to_dict()
+    res["rho"] = _rho.to_dict()
+    res["ccc"] = _ccc_lin.to_dict()
+    res["ccc_robust"] = _ccc_ustat.to_dict()
+    res["msd"] = _msd.to_dict()
+    res["rbs"] = _rbs.to_dict()
 
     if flag != FlagData.NEGATIVE:
-        res.loc["cp_approx", :] = _cp_approx.to_series()
-        res.loc["cp", :] = _cp.to_series()
-        res.loc["tdi", :] = _tdi.to_series()
-        res.loc["cp_approx", "criterion"] = delta_criterion
-        res.loc["cp", "criterion"] = delta_criterion
-        res.loc["tdi", "criterion"] = pi_criterion
+        res["cp_approx"] = _cp_approx.to_dict()
+        res["cp"] = _cp.to_dict()
+        res["tdi"] = _tdi.to_dict()
+        res["cp_approx"]["criterion"] = delta_criterion
+        res["cp"]["criterion"] = delta_criterion
+        res["tdi"]["criterion"] = pi_criterion
 
     if display:
-        print(res)
         print(shapiro(x_float - y_float))
 
     return flag, res

@@ -2,7 +2,7 @@
 # See LICENSE file for extended copyright information.
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
-from typing import Optional
+from typing import Optional, Self
 from attr import define, field
 import numpy as np
 
@@ -17,21 +17,24 @@ class McCi:
 
 
 @define
-class MonteCarlo():
-    _n: float = 0.0
-    _sum: float = 0.0
-    _sum_sq: float = 0.0
-    _mean = field(init=False, type=float)
-    _var = field(init=False, type=float)
+class MonteCarlo:
+    _n: float = field(init=False)
+    _sum: float = field(init=False)
+    _sum_sq: float = field(init=False)
+    _mean: float = field(init=False)
+    _var: float = field(init=False)
+    _standard_error: float = field(init=False)
 
 
-    def append(self, x: float):
+    def append(self, x: float) -> Self:
         self._n += 1.0
         self._sum += x
         self._sum_sq += x*x
 
+        return self
 
-    def compute(self, data: Optional[NDArrayFloat]=None):
+
+    def compute(self, data: Optional[NDArrayFloat]=None) -> McCi:
         if data is not None:
             self._n = len(data)
             self._sum = np.sum(data)

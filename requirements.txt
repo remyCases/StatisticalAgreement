@@ -1,6 +1,10 @@
 numpy
 pandas
+pandas-stubs
 scipy
 scipy-stubs
 matplotlib
 attrs
+mypy
+types-setuptools
+pytest

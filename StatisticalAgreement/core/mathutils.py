@@ -5,7 +5,7 @@
 import numpy as np
 
 def almost_equal_float(first: float, second: float, max_ulps: int=4) -> bool:
-    '''
+    """
     Asserts if two floats are almost equal.
 
     Parameters
@@ -23,7 +23,7 @@ def almost_equal_float(first: float, second: float, max_ulps: int=4) -> bool:
     --------
     >>> almost_equal_float(1.0, 1.01)
     False
-    '''
+    """
     # using difference of ulp as a more reliable way to test equality in float/double
     # same method as used in GoogleTest C++ library
     # see https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
@@ -36,8 +36,8 @@ def almost_equal_float(first: float, second: float, max_ulps: int=4) -> bool:
             return True
         return False
 
-    first_int = np.array(first).view('int64')
-    second_int = np.array(second).view('int64')
+    first_int = np.array(first).view("int64")
+    second_int = np.array(second).view("int64")
 
     ulps_diff = abs(first_int - second_int)
 

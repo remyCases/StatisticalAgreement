@@ -1,11 +1,12 @@
 # Statistical Agreement
+
 How to assert agreement using statistical indices ?
 
 ## Overview
 
-This repo implements some indices used in statistical agreement such as total deviation index (TDI) and coverage probability (CP). 
+This repo implements some indices used in statistical agreement such as total deviation index (TDI) and coverage probability (CP).
 
-Statistical Agreement is an ensemble of process to declare (or not) if two (or more) measurement methods lead to the same results.
+Statistical Agreement is an ensemble of processes to declare (or not) if two (or more) measurement methods lead to the same results.
 
 Currently, only implementations for basic continuous or categorical models are planned.
 
@@ -20,6 +21,7 @@ pip install StatisticalAgreement==0.4.0
 You can find examples in the example folder.
 
 Here is an example of CCC usage with Gaussian simulated data:
+
 ```python
 from scipy. stats import multivariate_normal
 import numpy as np
@@ -36,17 +38,18 @@ x = xy[:, 0]
 y = xy[:, 1]
 
 ax = sns.histplot(x - y)
-ax.set(xlabel='Difference of methods')
+ax.set(xlabel="Difference of methods")
 plt.show()
 
 # Return approximate estimate of CCC 
 # with a alpha risk of 5% 
 # and an allowance of whithin sample deviation of 10%.
-ccc = sa.ccc(x, y, method='approx', alpha=0.05, allowance=0.10)
+ccc = sa.ccc(x, y, method="approx", alpha=0.05, allowance=0.10)
 print(f"Approximate estimate of CCC: {ccc.estimate:.4f}\n\
 Lower confident interval of the estimate with confident level of 95%: {ccc.limit:.4f}\n")
 ```
-```
+
+```text
 Approximate estimate of CCC: 0.8943
 Lower confident interval of the estimate with confident level of 95%: 0.8625
 ```
@@ -61,22 +64,23 @@ Running the `main.py` with the argument `-e` will display the examples.
 ## Current Implementations
 
 For each index listed in the following table:
+
 - **naive** designes an implemetation using a parametric hypothesis (like a **normal** hypothesis), and thus only accurate if the hypothesis is true.
 - **robust** designes an implemetation not depending of any kind of hypothesis.
-- **tested** indicates if the implementation of the said index is tested with a monte-carlo test and results are correct in regards of the scientific literature. 
+- **tested** indicates if the implementation of the said index is tested with a monte-carlo test and results are correct in regards of the scientific literature.
 - **bootstrap** indicates if an alternative way to compute confident interval using a resample method is implemented.
 - **unified model** indicates if there is an implementation for models using continuous and categorical data (for instance with multiple raters and/or readings) - *not planned currently*
 
-|Index | Naive | Tested | Robust |  Tested | Bootstrap | Unified model | 
+|Index | Naive | Tested | Robust |  Tested | Bootstrap | Unified model |
 |--|:--:|:--:|:--:|:--:|:--:|:--:|
-| MSD |:heavy_check_mark:|:heavy_check_mark:[^1]|:x:|:x:|:x:|:x:
-| TDI |:heavy_check_mark:|WIP|:x:|:x:|:x:|:x:
-| CP |:heavy_check_mark:|WIP|:x:|:x:|:x:|:x:
-| Accuracy |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:
-| Precision |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:
-| CCC |:heavy_check_mark:|:heavy_check_mark:[^1]|WIP|:x:|:x:|:x:
-| Kappa |:heavy_check_mark:|:heavy_check_mark:[^3]|:x:|:x:|:x:|:x:
-| Weighted Kappa |:heavy_check_mark:[^2]|:heavy_check_mark:[^3]|:x:|:x:|:x:|:x:
+| MSD |:heavy_check_mark:|:heavy_check_mark:[^1]|:x:|:x:|:x:|:x:|
+| TDI |:heavy_check_mark:|WIP|:x:|:x:|:x:|:x:|
+| CP |:heavy_check_mark:|WIP|:x:|:x:|:x:|:x:|
+| Accuracy |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|
+| Precision |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|
+| CCC |:heavy_check_mark:|:heavy_check_mark:[^1]|WIP|:x:|:x:|:x:|
+| Kappa |:heavy_check_mark:|:heavy_check_mark:[^3]|:x:|:x:|:x:|:x:|
+| Weighted Kappa |:heavy_check_mark:[^2]|:heavy_check_mark:[^3]|:x:|:x:|:x:|:x:|
 
 ## Test result
 
@@ -94,7 +98,8 @@ Bibtex is available [here](bibliography.bib).
 
 ## Troubleshooting
 
-For VS Code users on Windows, using a venv to run the script can be prohibited due to ExecutionPolicy. 
+For VS Code users on Windows, using a venv to run the script can be prohibited due to ExecutionPolicy.
+
 ```powershell
 Get-ExecutionPolicy -List
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine

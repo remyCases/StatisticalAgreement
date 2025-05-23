@@ -8,10 +8,10 @@ from examples import examples
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--exampleCat", "-et", required=False, action='store_true')
-    parser.add_argument("--exampleCon", "-en", required=False, action='store_true')
-    parser.add_argument("--test", "-t", required=False, action='store_true')
-    parser.add_argument("--simulation","-s", required=False, nargs='*')
+    parser.add_argument("--exampleCat", "-et", required=False, action="store_true")
+    parser.add_argument("--exampleCon", "-en", required=False, action="store_true")
+    parser.add_argument("--test", "-t", required=False, action="store_true")
+    parser.add_argument("--simulation","-s", required=False, nargs="*")
 
     args = parser.parse_args()
 

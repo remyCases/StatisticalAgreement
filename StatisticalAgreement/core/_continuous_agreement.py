@@ -303,7 +303,7 @@ def tdi_approx(
 
     coeff_tdi = norm.ppf(1 - (1 - pi_criterion) / 2)
 
-    if msd.limit is None:
+    if np.isnan(msd.limit):
         raise ValueError("Cannot compute tdi since no limit was computed for msd.")
 
     tdi = TransformedEstimator(

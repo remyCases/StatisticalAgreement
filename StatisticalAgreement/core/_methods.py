@@ -6,11 +6,11 @@ import warnings
 import numpy as np
 
 from StatisticalAgreement.core import _categorical_agreement, _continuous_agreement
-from StatisticalAgreement.core.classutils import TransformedEstimator
-from StatisticalAgreement.core._types import NDArrayFloat
+from StatisticalAgreement.core.classutils import Indices, TransformedEstimator
+from StatisticalAgreement.core._types import NDArrayFloat, NDArrayInt
 
 
-def ccc_methods(
+def _ccc_methods(
         x: NDArrayFloat,
         y: NDArrayFloat,
         method: str,
@@ -36,7 +36,7 @@ def ccc_methods(
                      current possible methods are approx or ustat.")
 
 
-def cp_methods(
+def _cp_methods(
         x: NDArrayFloat,
         y: NDArrayFloat,
         method: str,
@@ -56,7 +56,7 @@ def cp_methods(
                      current possible methods are approx or exact.")
 
 
-def tdi_methods(
+def _tdi_methods(
         x: NDArrayFloat,
         y: NDArrayFloat,
         method: str,
@@ -73,7 +73,7 @@ def tdi_methods(
                      current possible methods are approx.")
 
 
-def msd_methods(
+def _msd_methods(
         x: NDArrayFloat,
         y: NDArrayFloat,
         method: str,
@@ -87,9 +87,9 @@ def msd_methods(
                      current possible methods are approx.")
 
 
-def kappa_methods(
-        x: NDArrayFloat,
-        y: NDArrayFloat,
+def _kappa_methods(
+        x: NDArrayInt,
+        y: NDArrayInt,
         method: str,
         alpha: float
     ) -> TransformedEstimator:
@@ -107,3 +107,57 @@ def kappa_methods(
     raise ValueError("Wrong method called for kappa computation, \
                      current possible methods are cohen, abs or squared.")
 
+
+def continuous_methods(
+        index_name: Indices,
+        x: NDArrayFloat,
+        y: NDArrayFloat,
+        method: str,
+        alpha: float,
+        criterion: float,
+        allowance: float
+    ) -> TransformedEstimator:
+
+    if x.ndim == 0 or y.ndim == 0:
+        raise ValueError("Input must be at least 1-dimensional")
+
+    if len(x) <= 3 or len(y) <= 3:
+        raise ValueError("Not enough data to compute indices, \
+                            need at least four elements on each array_like input.")
+    
+    if index_name == Indices.CCC:
+        return _ccc_methods(x, y, method, alpha, allowance)
+
+    elif index_name == Indices.CP:
+        return _cp_methods(x, y, method, alpha, criterion, allowance)
+
+    elif index_name == Indices.TDI:
+        return _tdi_methods(x, y, method, alpha, criterion, allowance)
+
+    elif index_name == Indices.MSD:
+        return _msd_methods(x, y, method, alpha)
+    
+    raise ValueError("Unknown index")
+
+
+def categorical_methods(
+        index_name: Indices,
+        x: NDArrayInt,
+        y: NDArrayInt,
+        method: str,
+        alpha: float,
+        criterion: float,
+        allowance: float
+    ) -> TransformedEstimator:
+
+    if x.ndim == 0 or y.ndim == 0:
+        raise ValueError("Input must be at least 1-dimensional")
+
+    if len(x) <= 3 or len(y) <= 3:
+        raise ValueError("Not enough data to compute indices, \
+                            need at least four elements on each array_like input.")
+    
+    if index_name == Indices.KAPPA:
+        return _kappa_methods(x, y, method, alpha)
+    
+    raise ValueError("Unknown index")
