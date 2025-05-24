@@ -5,7 +5,7 @@
 import argparse
 
 import pandas as pd
-import statistical_agreement as sa
+import statisticalagreement as sa
 from examples import examples
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ from attr import define
 from scipy.stats import norm, t
 import numpy as np
 
-from statistical_agreement.core._types import NDArrayFloat
+from statisticalagreement.core._types import NDArrayFloat
 
 class Indices(Enum):
     CCC = 0

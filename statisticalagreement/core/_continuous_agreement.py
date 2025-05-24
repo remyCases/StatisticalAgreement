@@ -5,10 +5,10 @@
 import numpy as np
 from scipy.stats import norm, chi2
 
-from statistical_agreement.core._types import NDArrayFloat
+from statisticalagreement.core._types import NDArrayFloat
 
-from statistical_agreement.core.classutils import TransformFunc, ConfidentLimit, TransformedEstimator
-from statistical_agreement.core.mathutils import almost_equal_float
+from statisticalagreement.core.classutils import TransformFunc, ConfidentLimit, TransformedEstimator
+from statisticalagreement.core.mathutils import almost_equal_float
 
 
 def precision(

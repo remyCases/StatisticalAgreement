@@ -11,9 +11,9 @@ import warnings
 import numpy as np
 from scipy.stats import shapiro
 
-from statistical_agreement.core import _continuous_agreement
-from statistical_agreement.core.classutils import ConfidentLimit, Estimator, FlagData, Indices, TransformFunc, TransformedEstimator
-from statistical_agreement.core._methods import categorical_methods, continuous_methods
+from statisticalagreement.core import _continuous_agreement
+from statisticalagreement.core.classutils import ConfidentLimit, Estimator, FlagData, Indices, TransformFunc, TransformedEstimator
+from statisticalagreement.core._methods import categorical_methods, continuous_methods
 
 
 DEFAULT_ALPHA = 0.05

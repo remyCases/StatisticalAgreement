@@ -4,7 +4,7 @@
 
 import numpy as np
 import pandas as pd
-import statistical_agreement as sa
+import statisticalagreement as sa
 
 def main(categorical: bool = False, continuous: bool = False) -> None:
 

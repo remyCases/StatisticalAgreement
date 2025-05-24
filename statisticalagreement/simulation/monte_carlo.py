@@ -6,7 +6,7 @@ from typing import Optional, Self
 from attr import define, field
 import numpy as np
 
-from statistical_agreement.core._types import NDArrayFloat
+from statisticalagreement.core._types import NDArrayFloat
 
 
 @define
