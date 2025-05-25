@@ -8,6 +8,8 @@ import pytest
 from statisticalagreement.core._types import NDArrayFloat
 
 
+DENORMALIZED_FLOAT = 1e-100
+
 @pytest.fixture
 def basic_array() -> NDArrayFloat:
     return np.array([1.0, 2.0, 3.0, 4.0, 5.0])

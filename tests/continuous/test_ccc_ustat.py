@@ -8,6 +8,7 @@ import pytest
 from statisticalagreement.core._continuous_agreement import ccc_ustat
 from statisticalagreement.core._types import NDArrayFloat
 from statisticalagreement.core.mathutils import assert_float
+from tests.continuous.conftest import DENORMALIZED_FLOAT
 
 
 @pytest.mark.parametrize("x_name", [
@@ -39,7 +40,7 @@ def test_ccc_ustat_added_denormalized_number(
     request: pytest.FixtureRequest
 ) -> None:
     x: NDArrayFloat = request.getfixturevalue(x_name)
-    y: NDArrayFloat = x + np.random.normal(0, 1e-9)
+    y: NDArrayFloat = x + np.random.normal(0, DENORMALIZED_FLOAT)
     ccc = ccc_ustat(x, y, 0.05, 1.0)
 
     assert_float(ccc.estimate, 1.0, max_ulps=4)

@@ -8,6 +8,7 @@ import pytest
 from statisticalagreement.core._continuous_agreement import rbs
 from statisticalagreement.core._types import NDArrayFloat
 from statisticalagreement.core.mathutils import assert_float
+from tests.continuous.conftest import DENORMALIZED_FLOAT
 
 
 @pytest.mark.parametrize("x_name", [
@@ -36,7 +37,7 @@ def test_rbs_added_denormalized_number(
     request: pytest.FixtureRequest
 ) -> None:
     x: NDArrayFloat = request.getfixturevalue(x_name)
-    y: NDArrayFloat = x + np.random.normal(0, 1e-9)
+    y: NDArrayFloat = x + np.random.normal(0, DENORMALIZED_FLOAT)
     _rbs = rbs(x, y, cp_allowance=0.0)
 
     assert_float(_rbs.estimate, np.nan, max_ulps=4)

@@ -9,6 +9,7 @@ from statisticalagreement.core._continuous_agreement import accuracy, precision
 from statisticalagreement.core._types import NDArrayFloat
 from statisticalagreement.core.classutils import TransformedEstimator
 from statisticalagreement.core.mathutils import assert_float
+from tests.continuous.conftest import DENORMALIZED_FLOAT
 
 
 @pytest.mark.parametrize("x_name", [
@@ -41,7 +42,7 @@ def test_accuracy_added_denormalized_number(
     request: pytest.FixtureRequest
 ) -> None:
     x: NDArrayFloat = request.getfixturevalue(x_name)
-    y: NDArrayFloat = x + np.random.normal(0, 1e-9)
+    y: NDArrayFloat = x + np.random.normal(0, DENORMALIZED_FLOAT)
     rho = precision(x, y, alpha=0.05)
     acc = accuracy(x, y, rho, alpha=0.05)
 

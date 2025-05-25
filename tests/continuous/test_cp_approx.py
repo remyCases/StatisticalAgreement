@@ -9,6 +9,7 @@ from statisticalagreement.core._continuous_agreement import cp_approx, msd_exact
 from statisticalagreement.core._types import NDArrayFloat
 from statisticalagreement.core.classutils import TransformedEstimator
 from statisticalagreement.core.mathutils import assert_float
+from tests.continuous.conftest import DENORMALIZED_FLOAT
 
 
 @pytest.mark.parametrize("x_name", [
@@ -41,7 +42,7 @@ def test_cp_approx_added_denormalized_number(
     request: pytest.FixtureRequest
 ) -> None:
     x: NDArrayFloat = request.getfixturevalue(x_name)
-    y: NDArrayFloat = x + np.random.normal(0, 1e-9)
+    y: NDArrayFloat = x + np.random.normal(0, DENORMALIZED_FLOAT)
     msd = msd_exact(x, y, alpha=0.05)
     cp = cp_approx(x, y, msd, alpha=0.05, delta_criterion=1.0, cp_allowance=0.0)
 
