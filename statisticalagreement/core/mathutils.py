@@ -29,7 +29,7 @@ def almost_equal_float(first: float, second: float, max_ulps: int=4) -> bool:
     # see https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
 
     # catching number with difference of sign and inf/nan
-    if first < 0 != second < 0:
+    if first < 0.0 != second < 0.0:
 
         # 0 == -0 can't be catched by integer representation
         if first == second:
@@ -45,3 +45,14 @@ def almost_equal_float(first: float, second: float, max_ulps: int=4) -> bool:
         return True
 
     return False
+
+
+def assert_float(first: float, second: float, max_ulps: int=4) -> None:
+
+    if not almost_equal_float(first, second, max_ulps):
+        ulps_diff = abs(
+            np.array(first).view("int64") - np.array(second).view("int64")
+        )
+        raise AssertionError(
+            f"ULP failing: {first} vs {second} (diff={ulps_diff} ULP > {max_ulps})"
+        )

@@ -5,7 +5,7 @@
 from enum import Enum
 from typing import Dict, Union
 
-from attr import define
+from attrs import define
 from scipy.stats import norm, t
 import numpy as np
 
@@ -127,7 +127,6 @@ class TransformedEstimator:
 
     def __attrs_post_init__(self) -> None:
         if np.isnan(self.variance):
-            self.transformed_estimate = np.nan
             return
 
         if self.n >= 30:

@@ -3,7 +3,7 @@
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
 from typing import Optional, Self
-from attr import define, field
+from attrs import define, field
 import numpy as np
 
 from statisticalagreement.core._types import NDArrayFloat

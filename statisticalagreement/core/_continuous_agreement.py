@@ -19,19 +19,30 @@ def precision(
 
     n = len(x)
     s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True, dtype=np.float64).flatten()
-
     sqr_var = np.sqrt(s_sq_hat_biased_x * s_sq_hat_biased_y)
     rho_hat = s_hat_biased_xy / sqr_var
 
-    var_rho_hat = (1 - rho_hat**2/2)/(n-3)
-    rho = TransformedEstimator(
-        estimate=rho_hat,
-        variance=var_rho_hat,
-        transformed_function=TransformFunc.Z,
-        alpha=alpha,
-        confident_limit=ConfidentLimit.LOWER,
-        n=n
-    )
+    if almost_equal_float(rho_hat, 1.0, max_ulps=4):
+        rho = TransformedEstimator(
+            estimate=rho_hat,
+            variance=0.0,
+            transformed_function=TransformFunc.ID,
+            alpha=alpha,
+            confident_limit=ConfidentLimit.LOWER,
+            n=n
+        )
+
+    else:
+        var_rho_hat = (1 - rho_hat**2/2)/(n-3)
+
+        rho = TransformedEstimator(
+            estimate=rho_hat,
+            variance=var_rho_hat,
+            transformed_function=TransformFunc.Z,
+            alpha=alpha,
+            confident_limit=ConfidentLimit.LOWER,
+            n=n
+        )
     return rho
 
 
@@ -50,22 +61,33 @@ def accuracy(
     sqr_var = np.sqrt(s_sq_hat_biased_x * s_sq_hat_biased_y)
     nu_sq_hat = mu_d**2 / sqr_var
     omega_hat = np.sqrt(s_sq_hat_biased_x / s_sq_hat_biased_y)
-
     acc_hat = 2 * sqr_var / (s_sq_hat_biased_x + s_sq_hat_biased_y + mu_d**2)
-    var_acc_hat = (
-        acc_hat**2*nu_sq_hat*(omega_hat + 1/omega_hat - 2*rho_hat) +
-        0.5*acc_hat**2*(omega_hat**2+1/omega_hat**2+2*rho_hat**2) +
-        (1+rho_hat**2)*(acc_hat*nu_sq_hat-1)
-        ) / ((n-2)*(1-acc_hat)**2)
 
-    acc = TransformedEstimator(
-        estimate=acc_hat,
-        variance=var_acc_hat,
-        transformed_function=TransformFunc.LOGIT,
-        alpha=alpha,
-        confident_limit=ConfidentLimit.LOWER,
-        n=n
-    )
+    if almost_equal_float(acc_hat, 1.0, max_ulps=4):
+        acc = TransformedEstimator(
+            estimate=acc_hat,
+            variance=0.0,
+            transformed_function=TransformFunc.ID,
+            alpha=alpha,
+            confident_limit=ConfidentLimit.LOWER,
+            n=n
+        )
+
+    else:
+        var_acc_hat = (
+                acc_hat**2*nu_sq_hat*(omega_hat + 1/omega_hat - 2*rho_hat) +
+                0.5*acc_hat**2*(omega_hat**2+1/omega_hat**2+2*rho_hat**2) +
+                (1+rho_hat**2)*(acc_hat*nu_sq_hat-1)
+            ) / ((n-2)*(1-acc_hat)**2)
+
+        acc = TransformedEstimator(
+            estimate=acc_hat,
+            variance=var_acc_hat,
+            transformed_function=TransformFunc.LOGIT,
+            alpha=alpha,
+            confident_limit=ConfidentLimit.LOWER,
+            n=n
+        )
     return acc
 
 
@@ -87,21 +109,34 @@ def ccc_lin(
     nu_sq_hat = mu_d**2 / sqr_var
 
     ccc_hat = rho_hat * t_accuracy.estimate
-    var_ccc_hat = 1 / (n - 2) * ((1-rho_hat**2)*ccc_hat**2*(1-ccc_hat**2)/rho_hat**2
-                                 + 2*ccc_hat**3*(1-ccc_hat)*nu_sq_hat / rho_hat
-                                 - ccc_hat**4 * nu_sq_hat**2 / (2*rho_hat**2))
-    var_z_hat = var_ccc_hat / (1-ccc_hat**2)**2
 
-    ccc = TransformedEstimator(
-        estimate=ccc_hat,
-        variance=var_ccc_hat,
-        transformed_variance=var_z_hat,
-        transformed_function=TransformFunc.Z,
-        allowance=1-allowance_whitin_sample_deviation**2,
-        alpha=alpha,
-        confident_limit=ConfidentLimit.LOWER,
-        n=n
-    )
+    if almost_equal_float(ccc_hat, 1.0, max_ulps=4):
+        ccc = TransformedEstimator(
+            estimate=ccc_hat,
+            variance=0.0,
+            transformed_function=TransformFunc.ID,
+            allowance=1-allowance_whitin_sample_deviation**2,
+            alpha=alpha,
+            confident_limit=ConfidentLimit.LOWER,
+            n=n
+        )
+
+    else:
+        var_ccc_hat = 1 / (n - 2) * ((1-rho_hat**2)*ccc_hat**2*(1-ccc_hat**2)/rho_hat**2
+                                    + 2*ccc_hat**3*(1-ccc_hat)*nu_sq_hat / rho_hat
+                                    - ccc_hat**4 * nu_sq_hat**2 / (2*rho_hat**2))
+        var_z_hat = var_ccc_hat / (1-ccc_hat**2)**2
+
+        ccc = TransformedEstimator(
+            estimate=ccc_hat,
+            variance=var_ccc_hat,
+            transformed_variance=var_z_hat,
+            transformed_function=TransformFunc.Z,
+            allowance=1-allowance_whitin_sample_deviation**2,
+            alpha=alpha,
+            confident_limit=ConfidentLimit.LOWER,
+            n=n
+        )
     return ccc
 
 

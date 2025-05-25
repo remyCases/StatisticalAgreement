@@ -30,6 +30,8 @@ class AgreementFunctor(Protocol):
             self, 
             x: np.typing.ArrayLike,
             y: np.typing.ArrayLike,
+            /,
+            *,
             method: str="approx",
             alpha: float=DEFAULT_ALPHA,
             criterion: float=0.0,
@@ -96,19 +98,20 @@ class AgreementIndex:
             try:
                 x_int = np.asarray(x, dtype=np.int64)
                 y_int = np.asarray(y, dtype=np.int64)
-                index = categorical_methods(self._name, x_int, y_int, method, alpha, criterion, allowance)
 
             except ValueError as e:
                 raise TypeError("Input must be convertible to int") from e
+
+            index = categorical_methods(self._name, x_int, y_int, method, alpha, criterion, allowance)
         else:
             try:
                 x_float = np.asarray(x, dtype=np.float64)
                 y_float = np.asarray(y, dtype=np.float64)
-                index = continuous_methods(self._name, x_float, y_float, method, alpha, criterion, allowance)
 
             except ValueError as e:
                 raise TypeError("Input must be convertible to float") from e
 
+            index = continuous_methods(self._name, x_float, y_float, method, alpha, criterion, allowance)
         if transformed:
             return index
 

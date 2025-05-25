@@ -50,8 +50,8 @@ def main(categorical: bool = False, continuous: bool = False) -> None:
 
         _, res = sa.agreement(
             x, y,
-            delta_criterion_for_cp,
-            pi_criterion_for_tdi,
+            delta_criterion=delta_criterion_for_cp,
+            pi_criterion=pi_criterion_for_tdi,
             display=True
         )
         print(pd.DataFrame(res))

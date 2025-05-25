@@ -3,11 +3,11 @@
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
 from typing import Dict, Tuple
-from attr import define
+from attrs import define
 import numpy as np
 from scipy.stats import multivariate_normal, shapiro
-import statistical_agreement as sa
-from statistical_agreement.core._types import NDArrayFloat
+import statisticalagreement as sa
+from statisticalagreement.core._types import NDArrayFloat
 from .monte_carlo import MonteCarlo
 
 
@@ -61,9 +61,9 @@ def mc_simulation(
         for d in data_possibilities:
             a = _simulation_from_model_and_ndata(
                 n_iteration=5000, 
-                n_data=d, 
-                model=m, 
-                name_of_index=name_of_index, 
+                n_data=d,
+                model=m,
+                name_of_index=name_of_index,
                 criterion=criterion
             )
             for k, v in a.items():
@@ -77,9 +77,9 @@ def mc_simulation(
 
 def _simulation_from_model_and_ndata(
         n_iteration: int, 
-        n_data: int, 
+        n_data: int,
         model: str,
-        name_of_index: str, 
+        name_of_index: str,
         criterion: float
     ) -> Dict[Tuple[str, str], Dict[Tuple[int, str], float]]:
 
@@ -92,7 +92,7 @@ def _simulation_from_model_and_ndata(
     index_func = getattr(sa, name_of_index)
 
     for i in range(n_iteration):
-        multidim = multivariate_normal.rvs(mean=mean, cov=cov, size=n_data)
+        multidim = multivariate_normal.rvs(mean=mean, cov=cov, size=n_data).astype(np.float64)
         index = index_func(multidim[:, 0], multidim[:, 1], method="approx", alpha=0.05, transformed=True, criterion=criterion)
 
         array_index[i] = index.estimate
@@ -117,13 +117,17 @@ def _simulation_from_model_and_ndata(
     res[(model, f"{name_of_index}")][(n_data, "mean")] = mc_index.mean
     res[(model, f"{name_of_index}")][(n_data, "std")] = np.sqrt(mc_index.var)
     res[(model, f"{name_of_index}")][(n_data, "pvalue")] = shapiro(array_index).pvalue
-    res[(model, f"{name_of_index}")][(n_data, "true_value")] = EXPECTED_VALUES[f"{name_of_index}"][model]
+
+    if name_of_index in EXPECTED_VALUES:
+        res[(model, f"{name_of_index}")][(n_data, "true_value")] = EXPECTED_VALUES[f"{name_of_index}"][model]
 
     res[(model, f"transformed_{name_of_index}")] = {}
     res[(model, f"transformed_{name_of_index}")][(n_data, "mean")] = mc_transformed_index.mean
     res[(model, f"transformed_{name_of_index}")][(n_data, "std")] = np.sqrt(mc_transformed_index.var)
     res[(model, f"transformed_{name_of_index}")][(n_data, "pvalue")] = shapiro(array_transformed_index).pvalue
-    res[(model, f"transformed_{name_of_index}")][(n_data, "true_value")] = EXPECTED_VALUES[f"transformed_{name_of_index}"][model]
+
+    if f"transformed_{name_of_index}" in EXPECTED_VALUES:
+        res[(model, f"transformed_{name_of_index}")][(n_data, "true_value")] = EXPECTED_VALUES[f"transformed_{name_of_index}"][model]
 
     res[(model, f"s_{name_of_index}")] = {}
     res[(model, f"s_{name_of_index}")][(n_data, "mean")] = mc_index_std.mean
