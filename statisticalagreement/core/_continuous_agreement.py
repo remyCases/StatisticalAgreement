@@ -40,6 +40,15 @@ def precision(
     n = len(x)
     s_sq_hat_biased_x, s_hat_biased_xy, _, s_sq_hat_biased_y = np.cov(x, y, bias=True, dtype=np.float64).flatten()
     sqr_var = np.sqrt(s_sq_hat_biased_x * s_sq_hat_biased_y)
+
+    if almost_equal_float(sqr_var, 0.0, max_ulps=4):
+        return _perfect_agreemeent(
+            estimate=1.0,
+            alpha=alpha,
+            confident_limit=ConfidentLimit.LOWER,
+            n=n
+        )
+
     rho_hat = s_hat_biased_xy / sqr_var
 
     if almost_equal_float(rho_hat, 1.0, max_ulps=4):
@@ -74,6 +83,15 @@ def accuracy(
 
     s_sq_hat_biased_x, _, _, s_sq_hat_biased_y = np.cov(x, y, bias=True, dtype=np.float64).flatten()
     sqr_var = np.sqrt(s_sq_hat_biased_x * s_sq_hat_biased_y)
+
+    if almost_equal_float((s_sq_hat_biased_x + s_sq_hat_biased_y + mu_d**2), 0.0, max_ulps=4):
+        return _perfect_agreemeent(
+            estimate=1.0,
+            alpha=alpha,
+            confident_limit=ConfidentLimit.LOWER,
+            n=n
+        )
+
     acc_hat = 2 * sqr_var / (s_sq_hat_biased_x + s_sq_hat_biased_y + mu_d**2)
 
     if almost_equal_float(acc_hat, 1.0, max_ulps=4):
@@ -170,6 +188,15 @@ def ccc_ustat(
 
     h = (n-1) * (u3 - u1)
     g = u1 + n*u2 + (n-1)*u3
+
+    if almost_equal_float(h, 0.0, max_ulps=4) and almost_equal_float(g, 0.0, max_ulps=4):
+        return _perfect_agreemeent(
+            estimate=1.0,
+            alpha=alpha,
+            confident_limit=ConfidentLimit.LOWER,
+            n=n
+        )
+
     ccc_hat = h/g
 
     if almost_equal_float(ccc_hat, 1.0, max_ulps=4):

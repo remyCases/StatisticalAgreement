@@ -40,3 +40,8 @@ def random_array_float64() -> NDArrayFloat:
         7.14034715e-39, -6.45279237e+16, -1.53052767e-27, -6.88750552e+14,
        -4.84970752e+03, -6.68250942e+14, -1.15351419e+10,  8.68598415e+14,
        -6.47698375e+19,  2.70349675e-22, -2.81302900e+07, -3.33942274e-19])
+
+
+@pytest.fixture
+def zeros_array() -> NDArrayFloat:
+    return np.zeros(100, dtype=np.float64)

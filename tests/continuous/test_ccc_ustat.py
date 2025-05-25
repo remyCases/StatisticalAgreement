@@ -11,7 +11,8 @@ from statisticalagreement.core.mathutils import assert_float
 
 @pytest.mark.parametrize("x_name", [
     ("basic_array"),
-    ("random_array_float64")
+    ("random_array_float64"),
+    ("zeros_array")
 ])
 def test_ccc_ustat_perfect_agreement(
     x_name: str, 
