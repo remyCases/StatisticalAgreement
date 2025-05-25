@@ -45,3 +45,8 @@ def random_array_float64() -> NDArrayFloat:
 @pytest.fixture
 def zeros_array() -> NDArrayFloat:
     return np.zeros(100, dtype=np.float64)
+
+
+@pytest.fixture
+def ones_array() -> NDArrayFloat:
+    return np.ones(100, dtype=np.float64)
