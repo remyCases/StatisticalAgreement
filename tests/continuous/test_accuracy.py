@@ -42,7 +42,7 @@ from statisticalagreement.core.mathutils import assert_float
 def test_accuracy_perfect_agreement(
     x: NDArrayFloat
 ) -> None:
-    rho = TransformedEstimator(estimate=1.0)
+    rho = TransformedEstimator(estimate=np.float64(1.0))
     acc = accuracy(x, x, rho, alpha=0.05)
 
     assert_float(acc.estimate, 1.0, max_ulps=4)

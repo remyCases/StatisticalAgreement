@@ -76,8 +76,8 @@ For each index listed in the following table:
 | MSD |:heavy_check_mark:|:heavy_check_mark:[^1]|:x:|:x:|:x:|:x:|
 | TDI |:heavy_check_mark:|WIP|:x:|:x:|:x:|:x:|
 | CP |:heavy_check_mark:|WIP|:x:|:x:|:x:|:x:|
-| Accuracy |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|
-| Precision |:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|
+| Accuracy |:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:|:x:|
+| Precision |:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:|:x:|
 | CCC |:heavy_check_mark:|:heavy_check_mark:[^1]|WIP|:x:|:x:|:x:|
 | Kappa |:heavy_check_mark:|:heavy_check_mark:[^3]|:x:|:x:|:x:|:x:|
 | Weighted Kappa |:heavy_check_mark:[^2]|:heavy_check_mark:[^3]|:x:|:x:|:x:|:x:|

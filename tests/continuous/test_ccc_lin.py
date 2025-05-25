@@ -42,8 +42,8 @@ from statisticalagreement.core.mathutils import assert_float
 def test_ccc_lin_perfect_agreement(
     x: NDArrayFloat
 ) -> None:
-    rho = TransformedEstimator(estimate=1.0)
-    acc = TransformedEstimator(estimate=1.0)
+    rho = TransformedEstimator(estimate=np.float64(1.0))
+    acc = TransformedEstimator(estimate=np.float64(1.0))
     ccc = ccc_lin(x, x, rho, acc, 0.05, 1.0)
 
     assert_float(ccc.estimate, 1.0, max_ulps=4)
