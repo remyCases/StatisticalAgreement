@@ -25,3 +25,9 @@ classifiers = [
 [project.urls]
 "Homepage" = "https://github.com/remyCases/StatisticalAgreement"
 "Bug Tracker" = "https://github.com/remyCases/StatisticalAgreement/issues"
+
+
+[tool.pytest.ini_options]
+markers = [
+    "stochastic: marks tests as using a Monte Carlo evaluation, which is slow (deselect with '-m \"not stochastic\"')",
+]

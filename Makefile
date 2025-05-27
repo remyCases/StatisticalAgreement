@@ -25,7 +25,11 @@ install: install_venv
 
 # unit testing
 test:
-	$(PYTEST) -v
+	$(PYTEST) -v -s -m "not stochastic"
+all_test:
+	$(PYTEST) -v -s
+test_sto:
+	$(PYTEST) -v -s -m "stochastic"
 
 # type annotations
 mypy:

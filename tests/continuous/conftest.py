@@ -2,6 +2,7 @@
 # See LICENSE file for extended copyright information.
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
+from typing import Tuple
 import numpy as np
 import pytest
 
@@ -9,6 +10,8 @@ from statisticalagreement.core._types import NDArrayFloat
 
 
 DENORMALIZED_FLOAT = 1e-100
+N_SAMPLES = 1000
+N_SIMULATIONS = 50000
 
 @pytest.fixture
 def basic_array() -> NDArrayFloat:
@@ -52,3 +55,11 @@ def zeros_array() -> NDArrayFloat:
 @pytest.fixture
 def ones_array() -> NDArrayFloat:
     return np.ones(100, dtype=np.float64)
+
+
+@pytest.fixture
+def gaussian_arrays() -> Tuple[NDArrayFloat, NDArrayFloat]:
+    np.random.seed(0)
+    x = np.random.normal(0, 1, 1000)
+    y = x + np.random.normal(0, 0.1, 1000)
+    return x, y
