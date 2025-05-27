@@ -51,7 +51,7 @@ def precision(
 
     rho_hat = s_hat_biased_xy / sqr_var
 
-    if almost_equal_float(rho_hat, 1.0, max_ulps=4):
+    if almost_equal_float(np.fabs(rho_hat), 1.0, max_ulps=4):
         return _perfect_agreemeent(
             estimate=rho_hat,
             alpha=alpha,
@@ -152,12 +152,10 @@ def ccc_lin(
     var_ccc_hat = 1 / (n - 2) * ((1-rho_hat**2)*ccc_hat**2*(1-ccc_hat**2)/rho_hat**2
                                 + 2*ccc_hat**3*(1-ccc_hat)*nu_sq_hat / rho_hat
                                 - ccc_hat**4 * nu_sq_hat**2 / (2*rho_hat**2))
-    var_z_hat = var_ccc_hat / (1-ccc_hat**2)**2
 
     return TransformedEstimator(
         estimate=ccc_hat,
         variance=var_ccc_hat,
-        transformed_variance=var_z_hat,
         transformed_function=TransformFunc.Z,
         allowance=1-allowance_whitin_sample_deviation**2,
         alpha=alpha,
@@ -224,12 +222,10 @@ def ccc_ustat(
     cov_h_g = (n-1)*(-(n-2)*cov_u1_u3 + n*cov_u2_u3 + (n-1)*v_u3 - v_u1 - n*cov_u1_u2)
 
     var_ccc_hat = ccc_hat**2 * (v_h / h**2 - 2*cov_h_g / (h*g) + v_g / g**2)
-    var_z_hat = var_ccc_hat / (1.0 - ccc_hat**2)**2
 
     return TransformedEstimator(
         estimate=ccc_hat,
         variance=var_ccc_hat,
-        transformed_variance=var_z_hat,
         transformed_function=TransformFunc.Z,
         allowance=1-allowance_whitin_sample_deviation**2,
         alpha=alpha,
@@ -258,12 +254,10 @@ def msd_exact(
         )
 
     var_esp_hat = 2 / (n - 2) * ( eps_sq_hat**2 - mu_d**4 )
-    var_w_hat = var_esp_hat / eps_sq_hat**2
 
     return TransformedEstimator(
         estimate=eps_sq_hat,
         variance=var_esp_hat,
-        transformed_variance=var_w_hat,
         transformed_function=TransformFunc.LOG,
         alpha=alpha,
         confident_limit=ConfidentLimit.UPPER,
@@ -349,12 +343,10 @@ def cp_approx(
     n_delta_minus = norm.pdf(delta_minus)
 
     var_cp_hat = 1.0/(n-3) * ((n_delta_plus - n_delta_minus)**2 + 0.5*(delta_minus*n_delta_minus + delta_plus*n_delta_plus))
-    var_transform_cp_hat = var_cp_hat / ((1-cp_hat)**2*cp_hat**2)
 
     return TransformedEstimator(
         estimate=cp_hat,
         variance=var_cp_hat,
-        transformed_variance=var_transform_cp_hat,
         transformed_function=TransformFunc.LOGIT,
         allowance=cp_allowance,
         alpha=alpha,
@@ -397,12 +389,10 @@ def cp_exact(
     n_delta_minus = norm.pdf(delta_minus)
 
     var_cp_hat = 1/(n-3) * ((n_delta_plus - n_delta_minus)**2 + 0.5*(delta_minus*n_delta_minus + delta_plus*n_delta_plus))
-    var_transform_cp_hat = var_cp_hat / ((1-cp_hat)**2*cp_hat**2)
 
     return TransformedEstimator(
         estimate=cp_hat,
         variance=var_cp_hat,
-        transformed_variance=var_transform_cp_hat,
         transformed_function=TransformFunc.LOGIT,
         allowance=cp_allowance,
         robust=True,
