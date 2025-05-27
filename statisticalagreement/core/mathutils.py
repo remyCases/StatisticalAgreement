@@ -2,11 +2,11 @@
 # See LICENSE file for extended copyright information.
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
-from typing import Optional, Self, TypeVar
+from typing import Optional, Self
 from attrs import define
 import numpy as np
 
-from statisticalagreement.core._types import NDArrayFloat, NDArrayUInt
+from statisticalagreement.core._types import T, NDArrayFloat, NDArrayUInt
 
 
 @define
@@ -22,7 +22,6 @@ class AssertFloatResult:
     def __bool__(self) -> bool:
         return self._flag
 
-T = TypeVar('T', float, NDArrayFloat)
 
 def almost_equal_float(first: T, second: T, max_ulps: int=4) -> AssertFloatResult:
     """

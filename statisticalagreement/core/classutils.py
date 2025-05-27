@@ -3,13 +3,13 @@
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
 from enum import Enum
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 from attrs import define, field
 from scipy.stats import norm, t
 import numpy as np
 
-from statisticalagreement.core._types import NDArrayFloat
+from statisticalagreement.core._types import T, NDArrayFloat
 
 class Indices(Enum):
     CCC = 0
@@ -31,7 +31,7 @@ class TransformFunc(Enum):
     LOGIT = "logit"
 
 
-    def apply(self, x: np.typing.ArrayLike) -> NDArrayFloat:
+    def apply(self, x: T) -> NDArrayFloat:
         """
         Apply transformation to input data.
 
@@ -151,34 +151,34 @@ class ConfidentLimit(Enum):
 
 @define
 class Estimator:
-    estimate: float
-    limit: float
-    allowance: float = np.nan
+    estimate: NDArrayFloat
+    limit: NDArrayFloat
+    allowance: Optional[NDArrayFloat]
 
-    def to_dict(self) -> Dict[str, Union[float, bool, str]]:
+    def to_dict(self) -> Dict[str, Union[NDArrayFloat, str]]:
         return {
             "estimate": self.estimate,
             "limit": self.limit,
-            "allowance": self.allowance,
+            "allowance": self.allowance if self.allowance is not None else "N/A",
         }
 
 
 @define
-class TransformedEstimator:
-    estimate: float
-    variance: float = np.nan
+class TransformedEstimator():
+    estimate: NDArrayFloat
+    variance: Optional[NDArrayFloat] = None
+    allowance: Optional[NDArrayFloat] = None
     transformed_function: TransformFunc = TransformFunc.NONE
-    transformed_estimate: float = field(init=False, default=np.nan)
-    transformed_variance: float = field(init=False, default=np.nan)
-    limit: float = field(default=np.nan)
-    allowance: float = np.nan
+    transformed_estimate: NDArrayFloat = field(init=False)
+    transformed_variance: NDArrayFloat = field(init=False)
+    limit: NDArrayFloat = field(init=False)
     robust: bool = False
     alpha: float = np.nan
     confident_limit: ConfidentLimit = ConfidentLimit.NONE
     n: int = 30
 
     def __attrs_post_init__(self) -> None:
-        if np.isnan(self.variance):
+        if self.variance is None:
             return
 
         if self.n >= 30:
@@ -186,8 +186,8 @@ class TransformedEstimator:
         else:
             coeff = t.ppf(1 - self.alpha, self.n - 1)
 
-        self.transformed_estimate = float(self.transformed_function.apply(self.estimate))
-        self.transformed_variance = self.variance * float(self.transformed_function.apply_diff_sq(self.estimate))
+        self.transformed_estimate = self.transformed_function.apply(self.estimate)
+        self.transformed_variance = self.variance * self.transformed_function.apply_diff_sq(self.estimate)
 
         transformed_limit = self.transformed_estimate
         if self.confident_limit == ConfidentLimit.UPPER:
@@ -195,21 +195,25 @@ class TransformedEstimator:
         if self.confident_limit == ConfidentLimit.LOWER:
             transformed_limit -= coeff * np.sqrt(self.transformed_variance)
 
-        self.limit = float(self.transformed_function.apply_inv(transformed_limit))
+        self.limit = self.transformed_function.apply_inv(transformed_limit)
 
 
-    def to_dict(self) -> Dict[str, Union[float, bool, str]]:
+    def to_dict(self) -> Dict[str, Union[NDArrayFloat, bool, str]]:
         return {
             "estimate": self.estimate,
             "limit": self.limit,
-            "variance": self.variance,
+            "variance": self.variance if self.variance is not None else "N/A",
             "transformed_function": str(self.transformed_function),
             "transformed_estimate": self.transformed_estimate,
             "transformed_variance": self.transformed_variance,
-            "allowance": self.allowance,
+            "allowance": self.allowance if self.allowance is not None else "N/A",
             "robust": self.robust,
         }
 
 
     def as_estimator(self) -> Estimator:
-        return Estimator(estimate=self.estimate, limit=self.limit, allowance=self.allowance)
+        return Estimator(
+            estimate=self.estimate, 
+            limit=self.limit, 
+            allowance=self.allowance
+        )

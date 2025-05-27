@@ -7,7 +7,6 @@ import pytest
 
 from statisticalagreement.core._continuous_agreement import rbs
 from statisticalagreement.core._types import NDArrayFloat
-from statisticalagreement.core.mathutils import assert_float
 from tests.continuous.conftest import DENORMALIZED_FLOAT
 
 
