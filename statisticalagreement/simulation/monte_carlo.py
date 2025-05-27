@@ -18,16 +18,16 @@ class McCi:
 
 @define
 class MonteCarlo:
-    _n: float = field(init=False)
-    _sum: float = field(init=False)
-    _sum_sq: float = field(init=False)
+    _n: int = 0
+    _sum: float = 0.0
+    _sum_sq: float = 0.0
     _mean: float = field(init=False)
     _var: float = field(init=False)
     _standard_error: float = field(init=False)
 
 
     def append(self, x: float) -> Self:
-        self._n += 1.0
+        self._n += 1
         self._sum += x
         self._sum_sq += x*x
 
@@ -40,8 +40,15 @@ class MonteCarlo:
             self._sum = np.sum(data)
             self._sum_sq = np.sum(data*data)
 
+        if self._n == 0:
+            raise ValueError("No data available to compute statistics.")
+
         self._mean = self._sum / self._n
-        self._var = self._sum_sq / self._n - self._mean * self._mean
+
+        if self._n < 2:
+            raise ValueError("At least two samples are required to compute variance and standard error.")
+
+        self._var = (self._sum_sq - self._sum * self._sum / self._n) / (self._n - 1)
         self._standard_error = np.sqrt(self._var / self._n)
 
         return McCi(

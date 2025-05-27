@@ -14,8 +14,8 @@ N_REPETITION = 5000
 def assert_almost_mc_ci(array: np.typing.NDArray[np.float64]) -> None:
     mc = MonteCarlo().compute(array)
     assert_float(mc.mean, np.mean(array, dtype=np.float64))
-    assert_float(mc.var, np.var(array, dtype=np.float64))
-    assert_float(mc.standard_error, float(sem(array, ddof=0)))
+    assert_float(mc.var, np.var(array, dtype=np.float64, ddof=1))
+    assert_float(mc.standard_error, float(sem(array, ddof=1)))
 
 
 def test_constant_monte_carlo() -> None:
