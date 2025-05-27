@@ -24,7 +24,7 @@ def test_rbs_perfect_agreement(
     x: NDArrayFloat = request.getfixturevalue(x_name)
     _rbs = rbs(x, x, cp_allowance=0.0)
 
-    assert_float(_rbs.estimate, np.nan, max_ulps=4)
+    assert np.isnan(_rbs.estimate)
 
 
 @pytest.mark.parametrize("x_name", [
@@ -40,4 +40,4 @@ def test_rbs_added_denormalized_number(
     y: NDArrayFloat = x + np.random.normal(0, DENORMALIZED_FLOAT)
     _rbs = rbs(x, y, cp_allowance=0.0)
 
-    assert_float(_rbs.estimate, np.nan, max_ulps=4)
+    assert np.isnan(_rbs.estimate)
