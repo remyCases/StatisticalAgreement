@@ -5,7 +5,7 @@
 from enum import Enum
 from typing import Dict, Union
 
-from attrs import define
+from attrs import define, field
 from scipy.stats import norm, t
 import numpy as np
 
@@ -58,7 +58,7 @@ class TransformFunc(Enum):
             case TransformFunc.LOG:
                 if np.any(x_array <= 0):
                     raise ValueError("LOG transformation requires all x > 0")
-                return np.log(x)
+                return np.log(x_array)
             case TransformFunc.Z:
                 if np.any(np.abs(x_array) >= 1):
                     raise ValueError("Z transformation requires |x| < 1")
@@ -72,6 +72,18 @@ class TransformFunc(Enum):
 
 
     def apply_inv(self, x: np.typing.ArrayLike) -> NDArrayFloat:
+        """
+        Apply the inverse of a transformation to input data.
+
+        Parameters
+        ----------
+        x : array_like
+
+        Returns
+        -------
+        np.ndarray
+            Transformed data.
+        """
         x_array = np.asarray(x, dtype=np.float64)
         if x_array.size == 0:
             return x_array
@@ -87,6 +99,46 @@ class TransformFunc(Enum):
             case TransformFunc.LOGIT:
                 exp_x = np.exp(x_array)
                 return exp_x/(exp_x + 1.0)
+            case TransformFunc.NONE:
+                raise ValueError("Cannot apply a NONE transformer.")
+
+
+    def apply_diff_sq(self, x: np.typing.ArrayLike) -> NDArrayFloat:
+        """
+        Apply the square derivation of a transformation to input data.
+
+        Parameters
+        ----------
+        x : array_like
+            Input data. Must satisfy:
+            - LOG: x > 0
+            - Z: |x| < 1
+            - LOGIT: 0 < x < 1
+
+        Returns
+        -------
+        np.ndarray
+            Transformed data.
+        """
+        x_array = np.asarray(x, dtype=np.float64)
+        if x_array.size == 0:
+            return x_array
+        
+        match self:
+            case TransformFunc.ID:
+                return np.ones(x_array.shape)
+            case TransformFunc.LOG:
+                if np.any(x_array <= 0):
+                    raise ValueError("LOG transformation requires all x > 0")
+                return 1.0 / (x_array*x_array)
+            case TransformFunc.Z:
+                if np.any(np.abs(x_array) >= 1):
+                    raise ValueError("Z transformation requires |x| < 1")
+                return 1.0 / ((1.0 - x_array*x_array)*(1.0 - x_array*x_array))
+            case TransformFunc.LOGIT:
+                if np.any((x_array <= 0) | (x_array >= 1)):
+                    raise ValueError("LOGIT transformation requires 0 < x < 1")
+                return 1.0 / ((1.0 - x_array)*(1.0 - x_array)*x_array*x_array)
             case TransformFunc.NONE:
                 raise ValueError("Cannot apply a NONE transformer.")
 
@@ -116,9 +168,9 @@ class TransformedEstimator:
     estimate: float
     variance: float = np.nan
     transformed_function: TransformFunc = TransformFunc.NONE
-    transformed_estimate: float = np.nan
-    transformed_variance: float = np.nan
-    limit: float = np.nan
+    transformed_estimate: float = field(init=False, default=np.nan)
+    transformed_variance: float = field(init=False, default=np.nan)
+    limit: float = field(default=np.nan)
     allowance: float = np.nan
     robust: bool = False
     alpha: float = np.nan
@@ -135,8 +187,7 @@ class TransformedEstimator:
             coeff = t.ppf(1 - self.alpha, self.n - 1)
 
         self.transformed_estimate = float(self.transformed_function.apply(self.estimate))
-        if np.isnan(self.transformed_variance):
-            self.transformed_variance = self.variance
+        self.transformed_variance = self.variance * float(self.transformed_function.apply_diff_sq(self.estimate))
 
         transformed_limit = self.transformed_estimate
         if self.confident_limit == ConfidentLimit.UPPER:
