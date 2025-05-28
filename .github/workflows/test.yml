@@ -7,21 +7,21 @@ on:
     branches: [ master ]
 
 jobs:
-build:
-  runs-on: ubuntu-latest
-  steps:
-  - name: Checkout repository content
-    uses: actions/checkout@v4
-    with:
-      fetch-depth: 0
+  build and test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository content
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-  - name: Setup Python Version
-    uses: actions/setup-python@v5
-    with:
-      python-version: '3.11'
+    - name: Setup Python Version
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
-  - name: Install Python dependencies
-    run: make install
+    - name: Install Python dependencies
+      run: make install
 
-  - name: Running unit tests
-    run: make test
+    - name: Running unit tests
+      run: make test
