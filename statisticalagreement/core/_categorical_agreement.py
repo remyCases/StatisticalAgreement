@@ -7,20 +7,23 @@ import numpy as np
 from statisticalagreement.core._types import NDArrayFloat, NDArrayInt
 from statisticalagreement.core.classutils import TransformFunc, ConfidentLimit, TransformedEstimator
 
+
 def contingency(
-        x: NDArrayInt, 
-        y: NDArrayInt, 
-        c: int
-    ) -> NDArrayInt:
+    x: NDArrayInt, 
+    y: NDArrayInt, 
+    c: int
+) -> NDArrayInt:
 
-    matrix_contingency = np.zeros((c+1, c+1), dtype=np.int64)
-    for _x, _y in zip(x, y):
-        matrix_contingency[_x][_y] += 1
-        matrix_contingency[_x][c] += 1
-        matrix_contingency[c][_y] += 1
-        matrix_contingency[c][c] += 1
-
-    return matrix_contingency
+    matrix = np.zeros((c, c), dtype=np.int64)
+    for i in range(len(x)):
+        matrix[x[i], y[i]] += 1
+        
+    full_matrix = np.zeros((c+1, c+1), dtype=np.int64)
+    full_matrix[:c, :c] = matrix
+    full_matrix[:c, c] = matrix.sum(axis=1)
+    full_matrix[c, :c] = matrix.sum(axis=0)
+    full_matrix[c, c] = matrix.sum()
+    return full_matrix
 
 
 def _generic_kappa(
@@ -33,23 +36,26 @@ def _generic_kappa(
 
     if x.shape != y.shape:
         raise ValueError("x and y should have the same number of dimensions.")
-    if x.ndim != 1 and w.ndim != 2 and w.shape != (x.shape, x.shape):
-        raise ValueError("Incorrect dimensions of w.")
+    if w.shape != (c, c):
+        raise ValueError(f"w must have a shape ({c},{c}), given: {w.shape}")
 
     mat = contingency(x, y, c)
     n: int = mat[c][c]
 
-    p0 = np.einsum("ii,ii", w, mat[:c, :c])
-    pc = np.einsum("ij,i,j", w, mat[:c, c], mat[c, :c])
+    p0 = np.einsum("ii,ii", w, mat[:c, :c], optimize=True)
+    pc = np.einsum("ij,i,j", w, mat[:c, c], mat[c, :c], optimize=True)
 
     if p0 == n:
         k_hat = 1.0
     else:
-        k_hat = (p0 - pc / float(n)) / (n - pc / float(n))
+        k_hat = float(n*p0 - pc) / (n*n - pc)
 
-    m_wi = np.einsum("i,ji->j", mat[c, :c], w) / float(n)
-    m_wj = np.einsum("i,ji->j", mat[:c, c], w) / float(n)
-    coeff = (w - (m_wi[:, np.newaxis] + m_wj)*(1-k_hat))**2
+    p_ij = mat[:c, :c] / n
+    w_mean = w * p_ij
+    w_mean_i = w_mean.sum(axis=1)
+    w_mean_j = w_mean.sum(axis=0)
+
+    coeff = (w - (w_mean_i[:, np.newaxis] + w_mean_j)*(1-k_hat))**2
     factor = np.einsum("ij,ij", mat[:c, :c], coeff) / float(n)
 
     if pc == n*n:
@@ -71,33 +77,45 @@ def _generic_kappa(
 def cohen_kappa(
         x: NDArrayInt,
         y: NDArrayInt,
-        c: int,
         alpha: float
     ) -> TransformedEstimator:
 
+    classes = np.unique(np.concatenate([x, y]))
+    c = len(classes)
+    label_map = {label: idx for idx, label in enumerate(classes)}
+    x_mapped = np.vectorize(label_map.get)(x)
+    y_mapped = np.vectorize(label_map.get)(y)
     weights = np.diag(np.ones(c))
 
-    return _generic_kappa(x, y, weights, c, alpha)
+    return _generic_kappa(x_mapped, y_mapped, weights, c, alpha)
 
 
 def abs_kappa(
         x: NDArrayInt,
         y: NDArrayInt,
-        c: int,
         alpha: float
     ) -> TransformedEstimator:
 
+    classes = np.unique(np.concatenate([x, y]))
+    c = len(classes)
+    label_map = {label: idx for idx, label in enumerate(classes)}
+    x_mapped = np.vectorize(label_map.get)(x)
+    y_mapped = np.vectorize(label_map.get)(y)
     weights = 1.0 - np.abs(np.arange(c)[:, np.newaxis] - np.arange(c)) / float(c)
     
-    return _generic_kappa(x, y, weights, c, alpha)
+    return _generic_kappa(x_mapped, y_mapped, weights, c, alpha)
 
 def squared_kappa(
         x: NDArrayInt,
         y: NDArrayInt,
-        c: int,
         alpha: float
     ) -> TransformedEstimator:
 
+    classes = np.unique(np.concatenate([x, y]))
+    c = len(classes)
+    label_map = {label: idx for idx, label in enumerate(classes)}
+    x_mapped = np.vectorize(label_map.get)(x)
+    y_mapped = np.vectorize(label_map.get)(y)
     weights = 1.0 - (np.arange(c)[:, np.newaxis] - np.arange(c))**2 / float(c*c)
     
-    return _generic_kappa(x, y, weights, c, alpha)
+    return _generic_kappa(x_mapped, y_mapped, weights, c, alpha)

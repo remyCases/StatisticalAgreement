@@ -11,7 +11,7 @@ def main(categorical: bool = False, continuous: bool = False) -> None:
     if categorical:
         x_cat = np.repeat([0, 0, 0, 1, 1, 1, 2, 2, 2], [11, 2, 19, 1, 3, 3, 0, 8, 82])
         y_cat = np.repeat([0, 1, 2, 0, 1, 2, 0, 1, 2], [11, 2, 19, 1, 3, 3, 0, 8, 82])
-        print(f"Of following contingency Matrix: \n{sa.get_contingency_table(x_cat, y_cat, 3)}\n")
+        print(f"Of following contingency Matrix: \n{sa.contingency_table(x_cat, y_cat)}\n")
         print(f"Estimate of Cohen's Kappa: {sa.kappa(x_cat, y_cat, method='cohen', alpha=0.05)}")
         print(f"Estimate of Abs Weighted Kappa: {sa.kappa(x_cat, y_cat, method='abs', alpha=0.05)}")
         print(f"Estimate of Sqr Weighted Kappa: {sa.kappa(x_cat, y_cat, method='squared', alpha=0.05)}")

@@ -73,28 +73,43 @@ For each index listed in the following table:
 
 |Index | Naive | Tested | Robust |  Tested | Bootstrap | Unified model |
 |--|:--:|:--:|:--:|:--:|:--:|:--:|
-| MSD |:heavy_check_mark:|:heavy_check_mark:[^1]|:x:|:x:|:x:|:x:|
-| TDI |:heavy_check_mark:|WIP|:x:|:x:|:x:|:x:|
-| CP |:heavy_check_mark:|WIP|:x:|:x:|:x:|:x:|
+| MSD |:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:|:x:|
+| TDI |:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:|:x:|
+| CP |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|
 | Accuracy |:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:|:x:|
 | Precision |:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:|:x:|
-| CCC |:heavy_check_mark:|:heavy_check_mark:[^1]|WIP|:x:|:x:|:x:|
-| Kappa |:heavy_check_mark:|:heavy_check_mark:[^3]|:x:|:x:|:x:|:x:|
-| Weighted Kappa |:heavy_check_mark:[^2]|:heavy_check_mark:[^3]|:x:|:x:|:x:|:x:|
+| CCC |:heavy_check_mark:|:heavy_check_mark:|WIP|:x:|:x:|:x:|
+| Kappa |:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:|:x:|
+| Weighted Kappa |:heavy_check_mark:[^2]|:heavy_check_mark:|:x:|:x:|:x:|:x:|
 
-## Test result
+[^2]: Absolute and Squared Weighted Kappa
 
-Implementation of the indices are tested with a monte-carlo simulation. The goal is to match results from the scientific literature. Currently tests of mc simulations can be display running `main.py` with the `-s i` argument where `i` is the index simulated.
+## Tests
+
+Unit tests for all indeces are written. Estimate tests can be launched using the "not stochastic" marker:
+
+```sh
+pytest -v -m "not stochastic"
+```
+
+Variance tests rely on MonteCarlo simulation and are quite slow. Tehy can be launched using the "stochastic" marker:
+
+```sh
+pytest -v -m "stochastic"
+```
+
+Tests that match results from the scientific literature and also implemented. Currently tests of MonteCarlo simulations can be display running `main.py` with the `-s i` argument where `i` is the index simulated.
 
 Currently only `msd` and `ccc` tests are implemented. One can compare `msd` simulation results with \cite{LIN2000} and `ccc` one with \cite{LIN1989}.
+
+```sh
+main.py -s msd
+main.py -s ccc
+```
 
 ## References
 
 Bibtex is available [here](bibliography.bib).
-
-[^1]: With normal data only
-[^2]: Absolute and Squared Weighted Kappa
-[^3]: Minimal testing based on examples found in \cite{LIN2013}
 
 ## Troubleshooting
 

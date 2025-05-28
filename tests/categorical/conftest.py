@@ -19,6 +19,11 @@ def basic_array() -> NDArrayInt:
 
 
 @pytest.fixture
+def basic_array_not_starting_at_zeros() -> NDArrayInt:
+    return np.array([1, 1, 3, 3, 1], dtype=np.int64)
+
+
+@pytest.fixture
 def random_array_int64() -> NDArrayInt:
     return np.array([0, 8, 6, 5, 9, 5, 4, 6, 6, 5, 3, 2, 1, 3, 4, 6, 2, 0, 0, 3, 2, 2,
        2, 9, 1, 8, 1, 0, 1, 7, 1, 9, 1, 4, 7, 6, 4, 4, 0, 5, 9, 4, 8, 4,
@@ -30,6 +35,11 @@ def random_array_int64() -> NDArrayInt:
 @pytest.fixture
 def zeros_array() -> NDArrayInt:
     return np.zeros(100, dtype=np.int64)
+
+
+@pytest.fixture
+def ones_array() -> NDArrayInt:
+    return np.ones(100, dtype=np.int64)
 
 
 @pytest.fixture

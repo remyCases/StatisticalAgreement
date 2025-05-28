@@ -3,7 +3,6 @@
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
 import warnings
-import numpy as np
 
 from statisticalagreement.core import _categorical_agreement, _continuous_agreement
 from statisticalagreement.core.classutils import Indices, TransformedEstimator
@@ -94,15 +93,14 @@ def _kappa_methods(
         alpha: float
     ) -> TransformedEstimator:
 
-    c = max(len(np.unique(x)), len(np.unique(y)))
     if method == "cohen":
-        return _categorical_agreement.cohen_kappa(x, y, c, alpha)
+        return _categorical_agreement.cohen_kappa(x, y, alpha)
 
     if method in {"ciccetti", "abs"}:
-        return _categorical_agreement.abs_kappa(x, y, c, alpha)
+        return _categorical_agreement.abs_kappa(x, y, alpha)
 
     if method in {"fleiss", "squared"}:
-        return _categorical_agreement.squared_kappa(x, y, c, alpha)
+        return _categorical_agreement.squared_kappa(x, y, alpha)
 
     raise ValueError("Wrong method called for kappa computation, \
                      current possible methods are cohen, abs or squared.")

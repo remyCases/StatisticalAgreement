@@ -20,7 +20,7 @@ def ccc(
         transformed: bool = ...
     ) -> Union[Estimator, TransformedEstimator]: 
     """
-        Compute index estimate and its confident interval
+        Compute the concordance correlation coefficient between x and y.
 
         Parameters
         ----------
@@ -29,11 +29,11 @@ def ccc(
         y : array_like of float
             Observation values, should have the same length as x.
         method : str, default: approx
-            Method used to compute the index.
+            Method used to compute the index. Expected values are approx or ustat.
         alpha : float, default: 0.05
             Confident level used in confident interval computation.
-        criterion : float, optional
-            Criterion used in some index computation (CP and TDI).
+        criterion : None
+            Not used.
         allowance : float, optional
             Allowance level to assert agreement.
         transformed : bool, default: False
@@ -56,7 +56,7 @@ def ccc(
         >>> y = np.array([11, 12, 16, 9])
         >>> sa.ccc(x, y, method="approx", alpha=0.05, allowance=0.10)
         Estimator(estimate=0.5714285714285715, limit=-0.4247655971444191, allowance=0.99)
-        """
+    """
     ...
 
 def cp(
@@ -71,7 +71,7 @@ def cp(
         transformed: bool = ...
     ) -> Union[Estimator, TransformedEstimator]:
     """
-        Compute index estimate and its confident interval
+        Compute the proportion of target values that lie in a given interval around the observation values.
 
         Parameters
         ----------
@@ -80,11 +80,11 @@ def cp(
         y : array_like of float
             Observation values, should have the same length as x.
         method : str, default: approx
-            Method used to compute the index.
+            Method used to compute the index. Expected values are approx or exact.
         alpha : float, default: 0.05
             Confident level used in confident interval computation.
         criterion : float, optional
-            Criterion used in some index computation (CP and TDI).
+            Distance from the observation values.
         allowance : float, optional
             Allowance level to assert agreement.
         transformed : bool, default: False
@@ -105,9 +105,11 @@ def cp(
         --------
         >>> x = np.array([12, 10, 13, 10])
         >>> y = np.array([11, 12, 16, 9])
-        >>> sa.ccc(x, y, method="approx", alpha=0.05, allowance=0.10)
-        Estimator(estimate=0.5714285714285715, limit=-0.4247655971444191, allowance=0.99)
-        """
+        >>> sa.cp(x, y, method="approx", alpha=0.05, criterion=5.0, allowance=0.5)
+        Estimator(estimate=0.9746526813225317, limit=3.301923138582779e-18, allowance=0.5)
+    
+        This result implies that it is expected that 97% of data from x lie in the following interval [y - 5, y + 5].
+    """
     ...
 def tdi(
         x: np.typing.ArrayLike,
@@ -121,7 +123,7 @@ def tdi(
         transformed: bool = ...
     ) -> Union[Estimator, TransformedEstimator]:
     """
-        Compute index estimate and its confident interval
+        Compute the boundary for which a given proportion of target values lie around the observation values.
 
         Parameters
         ----------
@@ -130,11 +132,11 @@ def tdi(
         y : array_like of float
             Observation values, should have the same length as x.
         method : str, default: approx
-            Method used to compute the index.
+            Method used to compute the index. Expected values are approx.
         alpha : float, default: 0.05
             Confident level used in confident interval computation.
         criterion : float, optional
-            Criterion used in some index computation (CP and TDI).
+            Proportion of target values. Has to be between 0.0 and 1.0.
         allowance : float, optional
             Allowance level to assert agreement.
         transformed : bool, default: False
@@ -155,9 +157,11 @@ def tdi(
         --------
         >>> x = np.array([12, 10, 13, 10])
         >>> y = np.array([11, 12, 16, 9])
-        >>> sa.ccc(x, y, method="approx", alpha=0.05, allowance=0.10)
-        Estimator(estimate=0.5714285714285715, limit=-0.4247655971444191, allowance=0.99)
-        """
+        >>> sa.tdi(x, y, alpha=0.05, criterion=0.9, allowance=10.0)
+        Estimator(estimate=3.6780045229005722, limit=11.84116682273355, allowance=10.0)
+
+        This result implies that it is expected that 90% of data from x lie in the following interval [y - 3.7, y + 3,7].
+    """
     ...
 def msd(
         x: np.typing.ArrayLike,
@@ -171,7 +175,7 @@ def msd(
         transformed: bool = ...
     ) -> Union[Estimator, TransformedEstimator]:
     """
-        Compute index estimate and its confident interval
+        Evaluate the aggregated deviation from the identity line Y = X.
 
         Parameters
         ----------
@@ -180,13 +184,13 @@ def msd(
         y : array_like of float
             Observation values, should have the same length as x.
         method : str, default: approx
-            Method used to compute the index.
+            Method used to compute the index. Expected values are approx.
         alpha : float, default: 0.05
             Confident level used in confident interval computation.
-        criterion : float, optional
-            Criterion used in some index computation (CP and TDI).
-        allowance : float, optional
-            Allowance level to assert agreement.
+        criterion : None
+            Not used.
+        allowance : None
+            Not used.
         transformed : bool, default: False
             If true return the transformedEstimator with all data used to computed estimate and confident limit,
             else return only estimate and confident limit.
@@ -205,9 +209,9 @@ def msd(
         --------
         >>> x = np.array([12, 10, 13, 10])
         >>> y = np.array([11, 12, 16, 9])
-        >>> sa.ccc(x, y, method="approx", alpha=0.05, allowance=0.10)
-        Estimator(estimate=0.5714285714285715, limit=-0.4247655971444191, allowance=0.99)
-        """
+        >>>  sa.msd(x, y, alpha=0.05)
+        Estimator(estimate=5.0, limit=51.824424224849665, allowance=None)
+    """
     ...
 def kappa(
         x: np.typing.ArrayLike,
@@ -221,22 +225,22 @@ def kappa(
         transformed: bool = ...
     ) -> Union[Estimator, TransformedEstimator]:
     """
-        Compute index estimate and its confident interval
+        Measure the accordance between target and observation values.
 
         Parameters
         ----------
-        x : array_like of float
+        x : array_like of int
             Target values.
-        y : array_like of float
+        y : array_like of int
             Observation values, should have the same length as x.
         method : str, default: approx
-            Method used to compute the index.
+            Method used to compute the index. Expected values are cohen, ciccetti, abs, fleiss or squared.
         alpha : float, default: 0.05
             Confident level used in confident interval computation.
-        criterion : float, optional
-            Criterion used in some index computation (CP and TDI).
-        allowance : float, optional
-            Allowance level to assert agreement.
+        criterion : None
+            Not used.
+        allowance : None
+            Not used.
         transformed : bool, default: False
             If true return the transformedEstimator with all data used to computed estimate and confident limit,
             else return only estimate and confident limit.
@@ -253,11 +257,11 @@ def kappa(
 
         Examples
         --------
-        >>> x = np.array([12, 10, 13, 10])
-        >>> y = np.array([11, 12, 16, 9])
-        >>> sa.ccc(x, y, method="approx", alpha=0.05, allowance=0.10)
-        Estimator(estimate=0.5714285714285715, limit=-0.4247655971444191, allowance=0.99)
-        """
+        >>> x = np.array([1, 1, 3, 3, 1])
+        >>> y = np.array([1, 1, 3, 2, 2])
+        >>> sa.kappa(x, y, method="abs", alpha=0.05)
+        Estimator(estimate=0.08695652173913045, limit=-0.00710419, allowance=None)
+    """
     ...
 
 def agreement(
@@ -276,9 +280,33 @@ def agreement(
     ) -> Tuple[FlagData, Dict[str, Dict[str, Union[float, str, bool]]]]:
     ...
 
-def get_contingency_table(
+def contingency_table(
         x: np.typing.NDArray[np.int64],
         y: np.typing.NDArray[np.int64],
-        c: int
     ) -> np.typing.NDArray[np.int64]:
+    """
+        Compute the contingency table between target and observation values.
+
+        Parameters
+        ----------
+        x : array_like of int
+            Target values.
+        y : array_like of int
+            Observation values, should have the same length as x.
+
+        Returns
+        -------
+        Array_like of int
+            Matrix of size (c+1, c+1) in which c is the number of categorical classes from x and y.
+
+        Examples
+        --------
+        >>> x = np.array([1, 1, 3, 3, 1])
+        >>> y = np.array([1, 1, 3, 2, 2])
+        >>> sa.contingency_table(x, y)
+        array([[2, 1, 0, 3],
+               [0, 0, 0, 0],
+               [0, 1, 1, 2],
+               [2, 2, 1, 5]], dtype=int64)
+    """
     ...

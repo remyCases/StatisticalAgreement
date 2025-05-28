@@ -15,16 +15,17 @@ from tests.continuous.conftest import N_SIMULATIONS
 
 @pytest.mark.parametrize("x_name", [
     ("basic_array"),
+    ("basic_array_not_starting_at_zeros"),
     ("random_array_int64"),
     ("zeros_array"),
+    ("ones_array"),
 ])
 def test_kappa_perfect_agreement(
     x_name: str, 
     request: pytest.FixtureRequest
 ) -> None:
     x: NDArrayInt = request.getfixturevalue(x_name)
-    c = len(np.unique(x))
-    kappa = abs_kappa(x, x, c, alpha=0.05)
+    kappa = abs_kappa(x, x, alpha=0.05)
 
     assert_float(kappa.estimate, 1.0, max_ulps=4)
     assert_float(kappa.variance, 0.0, max_ulps=4)
@@ -47,13 +48,11 @@ def test_monte_carlo_kappa_variance(
 
     for i in range(N_SIMULATIONS):
 
-        c1 = max(len(np.unique(x[i,:])), len(np.unique(y1[i,:])))
-        kappa1 = abs_kappa(x[i,:], y1[i,:], c1, alpha=0.05)
+        kappa1 = abs_kappa(x[i,:], y1[i,:], alpha=0.05)
         mc.append(kappa1.transformed_estimate)
         vars[2*i] = kappa1.transformed_variance
 
-        c2 = max(len(np.unique(x[i,:])), len(np.unique(y2[i,:])))
-        kappa2 = abs_kappa(x[i,:], y2[i,:], c2, alpha=0.05)
+        kappa2 = abs_kappa(x[i,:], y2[i,:], alpha=0.05)
         mc.append(kappa2.transformed_estimate)
         vars[2*i+1] = kappa2.transformed_variance
 
