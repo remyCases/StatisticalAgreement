@@ -167,7 +167,6 @@ def agreement(
         _rho = _acc = _ccc_lin = _ccc_ustat = TransformedEstimator(
             estimate=np.nan,
             variance=np.nan,
-            transformed_variance=np.nan,
             transformed_function=TransformFunc.NONE,
             allowance=1-allowance_whitin_sample_deviation**2,
             alpha=alpha,

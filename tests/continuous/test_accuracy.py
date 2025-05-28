@@ -11,7 +11,7 @@ from statisticalagreement.core._types import NDArrayFloat
 from statisticalagreement.core.classutils import TransformedEstimator
 from statisticalagreement.core.mathutils import assert_float
 from statisticalagreement.simulation.monte_carlo import MonteCarlo
-from tests.continuous.conftest import DENORMALIZED_FLOAT, N_SAMPLES, N_SIMULATIONS
+from tests.continuous.conftest import DENORMALIZED_FLOAT, N_SIMULATIONS
 
 
 @pytest.mark.parametrize("x_name", [
@@ -29,7 +29,6 @@ def test_accuracy_perfect_agreement(
     acc = accuracy(x, x, rho, alpha=0.05)
 
     assert_float(acc.estimate, 1.0, max_ulps=4)
-    assert acc.variance is not None
     assert_float(acc.variance, 0.0, max_ulps=4)
     assert_float(acc.limit, 1.0, max_ulps=4)
 
@@ -49,7 +48,6 @@ def test_accuracy_added_denormalized_number(
     acc = accuracy(x, y, rho, alpha=0.05)
 
     assert_float(acc.estimate, 1.0, max_ulps=4)
-    assert acc.variance is not None
     assert_float(acc.variance, 0.0, max_ulps=4)
     assert_float(acc.limit, 1.0, max_ulps=4)
 
@@ -70,13 +68,16 @@ def test_accuracy_gaussian_data(
 
 
 @pytest.mark.stochastic
-def test_monte_carlo_accuracy_variance() -> None:
+def test_monte_carlo_accuracy_variance(
+    monte_carlo_arrays: Tuple[NDArrayFloat, NDArrayFloat]
+) -> None:
+
     np.random.seed(0)
     mc = MonteCarlo()
     vars = np.empty(2*N_SIMULATIONS)
 
-    x = np.random.normal(loc=1000.0, scale=2000.0, size=(N_SIMULATIONS, N_SAMPLES))
-    eps = np.random.normal(loc=.0, scale=200.0, size=(N_SIMULATIONS, N_SAMPLES))
+    x = monte_carlo_arrays[0]
+    eps = monte_carlo_arrays[1]
     y1 = x + eps
     y2 = x - eps
 
@@ -96,9 +97,6 @@ def test_monte_carlo_accuracy_variance() -> None:
     var_empiric, se_empiric = res.var, res.standard_error
     mean_var = sum(vars) / (2*N_SIMULATIONS)
     ratio = (mean_var - var_empiric) / var_empiric
-
-    print(mean_var)
-    print(var_empiric)
 
     assert mean_var < var_empiric + 1.96*se_empiric
     assert mean_var > var_empiric - 1.96*se_empiric

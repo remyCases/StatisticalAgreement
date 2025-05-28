@@ -8,3 +8,4 @@ attrs
 mypy
 types-setuptools
 pytest
+scikit-learn

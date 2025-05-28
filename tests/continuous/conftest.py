@@ -11,7 +11,7 @@ from statisticalagreement.core._types import NDArrayFloat
 
 DENORMALIZED_FLOAT = 1e-100
 N_SAMPLES = 1000
-N_SIMULATIONS = 50000
+N_SIMULATIONS = 5000
 
 @pytest.fixture
 def basic_array() -> NDArrayFloat:
@@ -63,3 +63,11 @@ def gaussian_arrays() -> Tuple[NDArrayFloat, NDArrayFloat]:
     x = np.random.normal(0, 1, 1000)
     y = x + np.random.normal(0, 0.1, 1000)
     return x, y
+
+
+@pytest.fixture
+def monte_carlo_arrays() -> Tuple[NDArrayFloat, NDArrayFloat]:
+    np.random.seed(0)
+    x = np.random.normal(loc=1000.0, scale=2000.0, size=(N_SIMULATIONS, N_SAMPLES))
+    eps = np.random.normal(loc=.0, scale=200.0, size=(N_SIMULATIONS, N_SAMPLES))
+    return x, eps

@@ -32,8 +32,9 @@ def cohen_kappa(
     ) -> TransformedEstimator:
 
     mat = contingency(x, y, c)
-    p0: float = 0.0
-    pc: float = 0.0
+    print(mat)
+    p0: int = 0
+    pc: int = 0
     factor: float = 0.0
     n: int = mat[c][c]
 
@@ -41,13 +42,15 @@ def cohen_kappa(
     m_wj = np.zeros(c, dtype=np.float64)
 
     for i in range(c):
-        p0 += mat[i][i] / float(n)
-        pc += mat[i][c] / float(n) * mat[c][i] / float(n)
+        p0 += mat[i][i]
+        pc += mat[i][c] * mat[c][i]
 
         m_wi[i] = mat[c][i] / float(n)
         m_wj[i] = mat[i][c] / float(n)
 
-    k_hat = (p0 - pc) / (1 - pc)
+    print(f"p0: {p0}")
+    print(f"pc: {pc}")
+    k_hat = (p0 - pc / float(n)) / (1.0 - pc / float(n))
 
     for i, j in product(range(c), range(c)):
         if i != j:
@@ -62,7 +65,6 @@ def cohen_kappa(
     kappa = TransformedEstimator(
         estimate=k_hat,
         variance=var_k_hat,
-        transformed_variance=var_k_hat,
         transformed_function=TransformFunc.ID,
         alpha=alpha,
         confident_limit=ConfidentLimit.LOWER,
@@ -107,7 +109,6 @@ def abs_kappa(
     kappa = TransformedEstimator(
         estimate=k_hat,
         variance=var_k_hat,
-        transformed_variance=var_k_hat,
         transformed_function=TransformFunc.ID,
         alpha=alpha,
         confident_limit=ConfidentLimit.LOWER,
@@ -151,7 +152,6 @@ def squared_kappa(
     kappa = TransformedEstimator(
         estimate=k_hat,
         variance=var_k_hat,
-        transformed_variance=var_k_hat,
         transformed_function=TransformFunc.ID,
         alpha=alpha,
         confident_limit=ConfidentLimit.LOWER,

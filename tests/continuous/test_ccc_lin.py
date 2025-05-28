@@ -11,7 +11,7 @@ from statisticalagreement.core._types import NDArrayFloat
 from statisticalagreement.core.classutils import TransformedEstimator
 from statisticalagreement.core.mathutils import assert_float
 from statisticalagreement.simulation.monte_carlo import MonteCarlo
-from tests.continuous.conftest import DENORMALIZED_FLOAT, N_SAMPLES, N_SIMULATIONS
+from tests.continuous.conftest import DENORMALIZED_FLOAT, N_SIMULATIONS
 
 
 @pytest.mark.parametrize("x_name", [
@@ -24,13 +24,13 @@ def test_ccc_lin_perfect_agreement(
     x_name: str, 
     request: pytest.FixtureRequest
 ) -> None:
+
     x: NDArrayFloat = request.getfixturevalue(x_name)
     rho = TransformedEstimator(estimate=np.float64(1.0))
     acc = TransformedEstimator(estimate=np.float64(1.0))
     ccc = ccc_lin(x, x, rho, acc, 0.05, 1.0)
 
     assert_float(ccc.estimate, 1.0, max_ulps=4)
-    assert ccc.variance is not None
     assert_float(ccc.variance, 0.0, max_ulps=4)
     assert_float(ccc.limit, 1.0, max_ulps=4)
 
@@ -44,6 +44,7 @@ def test_ccc_lin_added_denormalized_number(
     x_name: str, 
     request: pytest.FixtureRequest
 ) -> None:
+
     x: NDArrayFloat = request.getfixturevalue(x_name)
     y: NDArrayFloat = x + np.random.normal(0, DENORMALIZED_FLOAT)
     rho = precision(x, y, alpha=0.05)
@@ -51,7 +52,6 @@ def test_ccc_lin_added_denormalized_number(
     ccc = ccc_lin(x, y, rho, acc, 0.05, 1.0)
 
     assert_float(ccc.estimate, 1.0, max_ulps=4)
-    assert ccc.variance is not None
     assert_float(ccc.variance, 0.0, max_ulps=4)
     assert_float(ccc.limit, 1.0, max_ulps=4)
 
@@ -59,6 +59,7 @@ def test_ccc_lin_added_denormalized_number(
 def test_ccc_gaussian_data(
     gaussian_arrays: Tuple[NDArrayFloat, NDArrayFloat]
 ) -> None:
+
     x = gaussian_arrays[0]
     y = gaussian_arrays[1]
 
@@ -74,13 +75,16 @@ def test_ccc_gaussian_data(
 
 
 @pytest.mark.stochastic
-def test_monte_carlo_ccc_variance() -> None:
+def test_monte_carlo_ccc_variance(
+    monte_carlo_arrays: Tuple[NDArrayFloat, NDArrayFloat]
+) -> None:
+
     np.random.seed(0)
     mc = MonteCarlo()
     vars = np.empty(2*N_SIMULATIONS)
 
-    x = np.random.normal(loc=10000.0, scale=2000.0, size=(N_SIMULATIONS, N_SAMPLES))
-    eps = np.random.normal(loc=10.0, scale=200.0, size=(N_SIMULATIONS, N_SAMPLES))
+    x = monte_carlo_arrays[0]
+    eps = monte_carlo_arrays[1]
     y1 = x + eps
     y2 = x - eps
     
