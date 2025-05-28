@@ -2,10 +2,9 @@
 # See LICENSE file for extended copyright information.
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
-from itertools import product
 import numpy as np
 
-from statisticalagreement.core._types import NDArrayInt
+from statisticalagreement.core._types import NDArrayFloat, NDArrayInt
 from statisticalagreement.core.classutils import TransformFunc, ConfidentLimit, TransformedEstimator
 
 def contingency(
@@ -24,43 +23,39 @@ def contingency(
     return matrix_contingency
 
 
-def cohen_kappa(
+def _generic_kappa(
         x: NDArrayInt,
         y: NDArrayInt,
+        w: NDArrayFloat,
         c: int,
         alpha: float
     ) -> TransformedEstimator:
 
+    if x.shape != y.shape:
+        raise ValueError("x and y should have the same number of dimensions.")
+    if x.ndim != 1 and w.ndim != 2 and w.shape != (x.shape, x.shape):
+        raise ValueError("Incorrect dimensions of w.")
+
     mat = contingency(x, y, c)
-    print(mat)
-    p0: int = 0
-    pc: int = 0
-    factor: float = 0.0
     n: int = mat[c][c]
 
-    m_wi = np.zeros(c, dtype=np.float64)
-    m_wj = np.zeros(c, dtype=np.float64)
+    p0 = np.einsum("ii,ii", w, mat[:c, :c])
+    pc = np.einsum("ij,i,j", w, mat[:c, c], mat[c, :c])
 
-    for i in range(c):
-        p0 += mat[i][i]
-        pc += mat[i][c] * mat[c][i]
+    if p0 == n:
+        k_hat = 1.0
+    else:
+        k_hat = (p0 - pc / float(n)) / (n - pc / float(n))
 
-        m_wi[i] = mat[c][i] / float(n)
-        m_wj[i] = mat[i][c] / float(n)
+    m_wi = np.einsum("i,ji->j", mat[c, :c], w) / float(n)
+    m_wj = np.einsum("i,ji->j", mat[:c, c], w) / float(n)
+    coeff = (w - (m_wi[:, np.newaxis] + m_wj)*(1-k_hat))**2
+    factor = np.einsum("ij,ij", mat[:c, :c], coeff) / float(n)
 
-    print(f"p0: {p0}")
-    print(f"pc: {pc}")
-    k_hat = (p0 - pc / float(n)) / (1.0 - pc / float(n))
-
-    for i, j in product(range(c), range(c)):
-        if i != j:
-            w = 0
-        else:
-            w = 1
-
-        factor += mat[i][j] / float(n) * (w - (m_wi[i] + m_wj[j])*(1-k_hat))**2
-
-    var_k_hat = (factor - (k_hat - pc*(1-k_hat))**2) / (n * (1-pc)**2)
+    if pc == n*n:
+        var_k_hat = 0.0
+    else:
+        var_k_hat = (factor - (k_hat - pc / float(n*n) *(1-k_hat))**2) / (n * (1 - pc / float(n*n))**2)
 
     kappa = TransformedEstimator(
         estimate=k_hat,
@@ -68,9 +63,21 @@ def cohen_kappa(
         transformed_function=TransformFunc.ID,
         alpha=alpha,
         confident_limit=ConfidentLimit.LOWER,
-        n=n,
+        n=n
     )
     return kappa
+
+
+def cohen_kappa(
+        x: NDArrayInt,
+        y: NDArrayInt,
+        c: int,
+        alpha: float
+    ) -> TransformedEstimator:
+
+    weights = np.diag(np.ones(c))
+
+    return _generic_kappa(x, y, weights, c, alpha)
 
 
 def abs_kappa(
@@ -80,41 +87,9 @@ def abs_kappa(
         alpha: float
     ) -> TransformedEstimator:
 
-    mat = contingency(x, y, c)
-    p0: float = 0.0
-    pc: float = 0.0
-    factor: float = 0.0
-    n: int = mat[c][c]
-
-    m_wi = np.zeros(c, dtype=np.float64)
-    m_wj = np.zeros(c, dtype=np.float64)
-    w: float = 0.0
-
-    for i, j in product(range(c), range(c)):
-        w = 1.0 - np.abs(i - j) / float(c)
-        p0 += w * mat[i][j] / float(n)
-        pc += w * mat[i][c] / float(n) * mat[c][j] / float(n)
-
-        m_wi[i] += mat[c][j] * w / float(n)
-        m_wj[j] += mat[i][c] * w / float(n)
-
-    k_hat = (p0 - pc) / (1 - pc)
-
-    for i, j in product(range(c), range(c)):
-        w = 1.0 - np.abs(i - j) / float(c)
-        factor += mat[i][j] / float(n)*(w - (m_wi[i] + m_wj[j])*(1-k_hat))**2
-
-    var_k_hat = (factor - (k_hat - pc*(1-k_hat))**2) / (n * (1-pc)**2)
-
-    kappa = TransformedEstimator(
-        estimate=k_hat,
-        variance=var_k_hat,
-        transformed_function=TransformFunc.ID,
-        alpha=alpha,
-        confident_limit=ConfidentLimit.LOWER,
-        n=n
-    )
-    return kappa
+    weights = 1.0 - np.abs(np.arange(c)[:, np.newaxis] - np.arange(c)) / float(c)
+    
+    return _generic_kappa(x, y, weights, c, alpha)
 
 def squared_kappa(
         x: NDArrayInt,
@@ -123,38 +98,6 @@ def squared_kappa(
         alpha: float
     ) -> TransformedEstimator:
 
-    mat = contingency(x, y, c)
-    p0: float = 0.0
-    pc: float = 0.0
-    factor: float = 0.0
-    n: int = mat[c][c]
-
-    m_wi = np.zeros(c, dtype=np.float64)
-    m_wj = np.zeros(c, dtype=np.float64)
-    w: float = 0.0
-
-    for i, j in product(range(c), range(c)):
-        w = 1 - (i - j)**2 / c**2
-        p0 += w * mat[i][j] / float(n)
-        pc += w * mat[i][c] / float(n) * mat[c][j] / float(n)
-
-        m_wi[i] += mat[c][j] * w / float(n)
-        m_wj[j] += mat[i][c] * w / float(n)
-
-    k_hat = (p0 - pc) / (1 - pc)
-
-    for i, j in product(range(c), range(c)):
-        w = 1 - (i - j)**2 / c**2
-        factor += mat[i][j] / float(n)*(w - (m_wi[i] + m_wj[j])*(1-k_hat))**2
-
-    var_k_hat = (factor - (k_hat - pc*(1-k_hat))**2) / (n * (1-pc)**2)
-
-    kappa = TransformedEstimator(
-        estimate=k_hat,
-        variance=var_k_hat,
-        transformed_function=TransformFunc.ID,
-        alpha=alpha,
-        confident_limit=ConfidentLimit.LOWER,
-        n=n
-    )
-    return kappa
+    weights = 1.0 - (np.arange(c)[:, np.newaxis] - np.arange(c))**2 / float(c*c)
+    
+    return _generic_kappa(x, y, weights, c, alpha)

@@ -17,9 +17,9 @@ from tests.continuous.conftest import N_SIMULATIONS
 @pytest.mark.parametrize("x_name", [
     ("basic_array"),
     ("random_array_int64"),
-    ("ones_array"),
+    ("zeros_array"),
 ])
-def test_cohen_kappa_perfect_agreement(
+def test_kappa_perfect_agreement(
     x_name: str, 
     request: pytest.FixtureRequest
 ) -> None:
@@ -32,7 +32,7 @@ def test_cohen_kappa_perfect_agreement(
     assert_float(kappa.limit, 1.0, max_ulps=4)
 
 
-def test_kappa_known_data(
+def test_kappa_random_data(
     random_arrays: Tuple[NDArrayInt, NDArrayInt]
 ) -> None:
 
