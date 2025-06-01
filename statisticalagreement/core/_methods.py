@@ -2,7 +2,10 @@
 # See LICENSE file for extended copyright information.
 # This file is part of StatisticalAgreement project from https://github.com/remyCases/StatisticalAgreement.
 
+from typing import Optional
 import warnings
+
+import numpy as np
 
 from statisticalagreement.core import _categorical_agreement, _continuous_agreement
 from statisticalagreement.core.classutils import Indices, TransformedEstimator
@@ -108,21 +111,53 @@ def _kappa_methods(
 
 def continuous_methods(
         index_name: Indices,
-        x: NDArrayFloat,
-        y: NDArrayFloat,
+        x: np.typing.ArrayLike,
+        y: np.typing.ArrayLike,
+        axis: Optional[int],
         method: str,
         alpha: float,
         criterion: float,
-        allowance: float
+        allowance: float,
     ) -> TransformedEstimator:
 
-    if x.ndim == 0 or y.ndim == 0:
-        raise ValueError("Input must be at least 1-dimensional")
+    x = np.asarray(x)
+    y = np.asarray(y)
 
-    if len(x) <= 3 or len(y) <= 3:
+    if axis is None:
+        x = np.reshape(x, (-1,))
+        y = np.reshape(y, (-1,))
+        axis = -1
+
+    axis_int = int(axis)
+    if axis_int != axis:
+        raise ValueError('`axis` must be an integer.')
+    axis = axis_int
+
+    n = x.shape[axis]
+    if n != y.shape[axis]:
+        raise ValueError('`x` and `y` must have the same length along `axis`.')
+
+    if n < 4:
         raise ValueError("Not enough data to compute indices, \
-                            need at least four elements on each array_like input.")
+                         need at least four elements on each array_like input.")
+
+    try:
+        x, y = np.broadcast_arrays(x, y)
+    except (ValueError, RuntimeError) as e:
+        message = "`x` and `y` must be broadcastable."
+        raise ValueError(message) from e
     
+    x = np.moveaxis(x, axis, -1)
+    y = np.moveaxis(y, axis, -1)
+    axis = -1
+
+    dtype = np.result_type(x.dtype, y.dtype)
+    if np.isdtype(dtype, "integral"):
+        dtype = np.asarray(1.).dtype
+
+    x = np.astype(x, dtype, copy=False)
+    y = np.astype(y, dtype, copy=False)
+
     if index_name == Indices.CCC:
         return _ccc_methods(x, y, method, alpha, allowance)
 
@@ -140,21 +175,57 @@ def continuous_methods(
 
 def categorical_methods(
         index_name: Indices,
-        x: NDArrayInt,
-        y: NDArrayInt,
+        x: np.typing.ArrayLike,
+        y: np.typing.ArrayLike,
+        axis: Optional[int],
         method: str,
         alpha: float,
-        criterion: float,
-        allowance: float
+        _criterion: float,
+        _allowance: float
     ) -> TransformedEstimator:
 
-    if x.ndim == 0 or y.ndim == 0:
-        raise ValueError("Input must be at least 1-dimensional")
+    x = np.asarray(x)
+    y = np.asarray(y)
 
-    if len(x) <= 3 or len(y) <= 3:
+    if axis is None:
+        x = np.reshape(x, (-1,))
+        y = np.reshape(y, (-1,))
+        axis = -1
+
+    axis_int = int(axis)
+    if axis_int != axis:
+        raise ValueError('`axis` must be an integer.')
+    axis = axis_int
+
+    n = x.shape[axis]
+    if n != y.shape[axis]:
+        raise ValueError('`x` and `y` must have the same length along `axis`.')
+
+    if n < 4:
         raise ValueError("Not enough data to compute indices, \
-                            need at least four elements on each array_like input.")
+                         need at least four elements on each array_like input.")
+
+    try:
+        x, y = np.broadcast_arrays(x, y)
+    except (ValueError, RuntimeError) as e:
+        message = "`x` and `y` must be broadcastable."
+        raise ValueError(message) from e
     
+    x = np.moveaxis(x, axis, -1)
+    y = np.moveaxis(y, axis, -1)
+    axis = -1
+
+    dtype = np.result_type(x.dtype, y.dtype)
+    if not np.isdtype(dtype, "integral"):
+        raise TypeError("Input must be convertible to int")
+    dtype = np.asarray(1.).dtype
+
+    x = np.astype(x, dtype, copy=False)
+    y = np.astype(y, dtype, copy=False)
+
+    if method == "approx":
+        method = "cohen"
+
     if index_name == Indices.KAPPA:
         return _kappa_methods(x, y, method, alpha)
     

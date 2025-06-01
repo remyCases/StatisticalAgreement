@@ -20,25 +20,23 @@ def ccc(
         transformed: bool = ...
     ) -> Union[Estimator, TransformedEstimator]: 
     """
-        Compute the concordance correlation coefficient between x and y.
+        Calculate the Concordance Correlation Coefficient.
 
         Parameters
         ----------
-        x : array_like of float
-            Target values.
-        y : array_like of float
-            Observation values, should have the same length as x.
-        method : str, default: approx
-            Method used to compute the index. Expected values are approx or ustat.
-        alpha : float, default: 0.05
-            Confident level used in confident interval computation.
+        x, y : array_like
+            Input arrays for method comparison.
+        method : {'approx', 'ustat'}, optional
+            Method for confidence interval calculation. Default is 'approx'.
+        alpha : float, optional
+            Significance level for confidence interval. Default is 0.05.
         criterion : None
             Not used.
         allowance : float, optional
             Allowance level to assert agreement.
-        transformed : bool, default: False
+        transformed : bool
             If true return the transformedEstimator with all data used to computed estimate and confident limit,
-            else return only estimate and confident limit.
+            else return only estimate and confident limit. Default is False.
 
         Returns
         -------
@@ -75,21 +73,19 @@ def cp(
 
         Parameters
         ----------
-        x : array_like of float
-            Target values.
-        y : array_like of float
-            Observation values, should have the same length as x.
-        method : str, default: approx
-            Method used to compute the index. Expected values are approx or exact.
-        alpha : float, default: 0.05
-            Confident level used in confident interval computation.
+        x, y : array_like
+            Input arrays for method comparison.
+        method : {'approx', 'exact'}, optional
+            Method for confidence interval calculation. Default is 'approx'.
+        alpha : float, optional
+            Significance level for confidence interval. Default is 0.05.
         criterion : float, optional
             Distance from the observation values.
         allowance : float, optional
             Allowance level to assert agreement.
-        transformed : bool, default: False
+        transformed : bool
             If true return the transformedEstimator with all data used to computed estimate and confident limit,
-            else return only estimate and confident limit.
+            else return only estimate and confident limit. Default is False.
 
         Returns
         -------
@@ -127,21 +123,19 @@ def tdi(
 
         Parameters
         ----------
-        x : array_like of float
-            Target values.
-        y : array_like of float
-            Observation values, should have the same length as x.
-        method : str, default: approx
-            Method used to compute the index. Expected values are approx.
-        alpha : float, default: 0.05
-            Confident level used in confident interval computation.
+        x, y : array_like
+            Input arrays for method comparison.
+        method : 'approx', optional
+            Method for confidence interval calculation. Default is 'approx'.
+        alpha : float, optional
+            Significance level for confidence interval. Default is 0.05.
         criterion : float, optional
             Proportion of target values. Has to be between 0.0 and 1.0.
         allowance : float, optional
             Allowance level to assert agreement.
-        transformed : bool, default: False
+        transformed : bool
             If true return the transformedEstimator with all data used to computed estimate and confident limit,
-            else return only estimate and confident limit.
+            else return only estimate and confident limit. Default is False.
 
         Returns
         -------
@@ -179,21 +173,19 @@ def msd(
 
         Parameters
         ----------
-        x : array_like of float
-            Target values.
-        y : array_like of float
-            Observation values, should have the same length as x.
-        method : str, default: approx
-            Method used to compute the index. Expected values are approx.
-        alpha : float, default: 0.05
-            Confident level used in confident interval computation.
+        x, y : array_like
+            Input arrays for method comparison.
+        method : 'approx', optional
+            Method for confidence interval calculation. Default is 'approx'.
+        alpha : float, optional
+            Significance level for confidence interval. Default is 0.05.
         criterion : None
             Not used.
         allowance : None
             Not used.
-        transformed : bool, default: False
+        transformed : bool
             If true return the transformedEstimator with all data used to computed estimate and confident limit,
-            else return only estimate and confident limit.
+            else return only estimate and confident limit. Default is False.
 
         Returns
         -------
@@ -229,21 +221,19 @@ def kappa(
 
         Parameters
         ----------
-        x : array_like of int
-            Target values.
-        y : array_like of int
-            Observation values, should have the same length as x.
-        method : str, default: approx
-            Method used to compute the index. Expected values are cohen, ciccetti, abs, fleiss or squared.
-        alpha : float, default: 0.05
-            Confident level used in confident interval computation.
+        x, y : array_like
+            Input arrays for method comparison.
+        method : {'cohen', 'ciccetti', 'abs', 'fleiss', 'squared'}, optional
+            Method for confidence interval calculation. Default is 'cohen'.
+        alpha : float, optional
+            Significance level for confidence interval. Default is 0.05.
         criterion : None
             Not used.
         allowance : None
             Not used.
-        transformed : bool, default: False
+        transformed : bool
             If true return the transformedEstimator with all data used to computed estimate and confident limit,
-            else return only estimate and confident limit.
+            else return only estimate and confident limit. Default is False.
 
         Returns
         -------
@@ -289,10 +279,8 @@ def contingency_table(
 
         Parameters
         ----------
-        x : array_like of int
-            Target values.
-        y : array_like of int
-            Observation values, should have the same length as x.
+        x, y : array_like
+            Input arrays for method comparison.
 
         Returns
         -------

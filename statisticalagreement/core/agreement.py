@@ -6,7 +6,7 @@
 ## Total deviation index for measuring individual agreement with applications in
 ## laboratory performance and bioequivalence. Statistics in Medicine, 19(2), 255–270
 
-from typing import Dict, Protocol, Tuple, Union, runtime_checkable
+from typing import Dict, Optional, Protocol, Tuple, Union, runtime_checkable
 import warnings
 import numpy as np
 from scipy.stats import shapiro
@@ -32,6 +32,7 @@ class AgreementFunctor(Protocol):
             y: np.typing.ArrayLike,
             /,
             *,
+            axis: Optional[int]=None,
             method: str="approx",
             alpha: float=DEFAULT_ALPHA,
             criterion: float=0.0,
@@ -49,69 +50,18 @@ class AgreementIndex:
             self, 
             x: np.typing.ArrayLike,
             y: np.typing.ArrayLike,
+            axis: Optional[int]=None,
             method: str="approx",
             alpha: float=DEFAULT_ALPHA,
             criterion: float=0.0,
             allowance: float=0.0,
             transformed: bool=False
         ) -> Union[Estimator, TransformedEstimator]:
-        """
-        Compute index estimate and its confident interval
-
-        Parameters
-        ----------
-        x : array_like of float
-            Target values.
-        y : array_like of float
-            Observation values, should have the same length as x.
-        method : str, default: approx
-            Method used to compute the index.
-        alpha : float, default: 0.05
-            Confident level used in confident interval computation.
-        criterion : float, optional
-            Criterion used in some index computation (CP and TDI).
-        allowance : float, optional
-            Allowance level to assert agreement.
-        transformed : bool, default: False
-            If true return the transformedEstimator with all data used to computed estimate and confident limit,
-            else return only estimate and confident limit.
-
-        Returns
-        -------
-        Estimator
-            dataclass storing estimate of index, its confident limit and allowance if given.
-
-        Raises
-        ------
-        ValueError
-            If wrong method is given or if less than 4 data are given.
-
-        Examples
-        --------
-        >>> x = np.array([12, 10, 13, 10])
-        >>> y = np.array([11, 12, 16, 9])
-        >>> sa.ccc(x, y, method="approx", alpha=0.05, allowance=0.10)
-        Estimator(estimate=0.5714285714285715, limit=-0.4247655971444191, allowance=0.99)
-        """
-        
+    
         if self._name == Indices.KAPPA:
-            try:
-                x_int = np.asarray(x, dtype=np.int64)
-                y_int = np.asarray(y, dtype=np.int64)
-
-            except ValueError as e:
-                raise TypeError("Input must be convertible to int") from e
-
-            index = categorical_methods(self._name, x_int, y_int, method, alpha, criterion, allowance)
+            index = categorical_methods(self._name, x, y, axis, method, alpha, criterion, allowance)
         else:
-            try:
-                x_float = np.asarray(x, dtype=np.float64)
-                y_float = np.asarray(y, dtype=np.float64)
-
-            except ValueError as e:
-                raise TypeError("Input must be convertible to float") from e
-
-            index = continuous_methods(self._name, x_float, y_float, method, alpha, criterion, allowance)
+            index = continuous_methods(self._name, x, y, axis, method, alpha, criterion, allowance)
         if transformed:
             return index
 

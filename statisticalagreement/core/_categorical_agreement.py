@@ -105,6 +105,7 @@ def abs_kappa(
     
     return _generic_kappa(x_mapped, y_mapped, weights, c, alpha)
 
+
 def squared_kappa(
         x: NDArrayInt,
         y: NDArrayInt,

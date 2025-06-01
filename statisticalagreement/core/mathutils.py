@@ -16,14 +16,14 @@ class AssertFloatResult:
 
     @classmethod
     def _as(cls, flag: bool) -> Self:
-        return cls(_flag=flag)
+        return cls(flag)
     
 
     def __bool__(self) -> bool:
         return self._flag
 
-T = TypeVar('T', float, NDArrayFloat)
 
+T = TypeVar('T', float, NDArrayFloat)
 def almost_equal_float(first: T, second: T, max_ulps: int=4) -> AssertFloatResult:
     """
     Asserts if two floats are almost equal.
